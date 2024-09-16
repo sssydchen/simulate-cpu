@@ -24,7 +24,7 @@ void test1(struct cpu *cpu)
     zerocpu(cpu);
     cpu->R[3] = 5;
     cpu->R[6] = 10;
-    store2(cpu, 0x50F1, 0);
+    store2(cpu, 0x5073, 0);
 
     int val = emulate(cpu);
     assert(val == 0);

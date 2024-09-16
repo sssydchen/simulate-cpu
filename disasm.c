@@ -24,9 +24,9 @@ static char *jmp_suff[] = {"","_Z", "_NZ", "_LT", "_GT",
 // returns number of bytes consumed
 int disasm(uint16_t insn, uint16_t next, char *buf)
 {
-    int rc = insn & 7;
+    int ra = insn & 7;
     int rb = (insn & 070) >> 3;
-    int ra = (insn & 0700) >> 6;
+    int rc = (insn & 0700) >> 6;
     
     int indir = insn & 0x0800;
     int byte = insn & 0x0400;
@@ -37,16 +37,16 @@ int disasm(uint16_t insn, uint16_t next, char *buf)
     
     switch (insn & 0xF000) {
     case 0x1000:            /* SET */
-        sprintf(buf, "SET R%d = 0x%04x", rc, next);
+        sprintf(buf, "SET R%d = 0x%04x", ra, next);
         return 4;
         break;
     case 0x2000:            /* LOAD */
         if (byte)
             tmp = ".B";
         if (indir) 
-            sprintf(buf, "LOAD%s R%d <- *R%d", tmp, rc, rb);
+            sprintf(buf, "LOAD%s R%d <- *R%d", tmp, ra, rb);
         else {
-            sprintf(buf, "LOAD%s R%d <- *0x%04x", tmp, rc, next);
+            sprintf(buf, "LOAD%s R%d <- *0x%04x", tmp, ra, next);
             return 4;
         }
         break;
@@ -54,9 +54,9 @@ int disasm(uint16_t insn, uint16_t next, char *buf)
         if (byte)
             tmp = ".B";
         if (indir) 
-            sprintf(buf, "STORE%s R%d -> *R%d", tmp, rc, rb);
+            sprintf(buf, "STORE%s R%d -> *R%d", tmp, ra, rb);
         else {
-            sprintf(buf, "STORE%s R%d -> *0x%04x", tmp, rc, next);
+            sprintf(buf, "STORE%s R%d -> *0x%04x", tmp, ra, next);
             return 4;
         }
         break;

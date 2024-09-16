@@ -121,7 +121,7 @@ def do_load(line):                        # load rx <- addr
     store_insn(0x2000 | byte | regnum(line[1]))
     store_insn(value(line[3]))
 
-def do_load_rel(line):                    # load rd <- * rs
+def do_load_rel(line):                    # load ra <- * rb
     op = line[0]
     byte = 0x0400 if (op[-2:] == '.B') else 0
     store_insn(0x2800 | byte | regnum(line[4]) << 3 | regnum(line[1]))
@@ -134,7 +134,7 @@ def do_store(line):                       # store rx -> addr
     store_insn(0x3000 | byte | regnum(line[1]))
     store_insn(value(line[3]))
 
-def do_store_rel(line):                   # store rs -> * rd
+def do_store_rel(line):                   # store ra -> * rb
     op = line[0]
     byte = 0x0400 if (op[-2:] == '.B') else 0
     store_insn(0x3800 | byte | regnum(line[4]) << 3 | regnum(line[1]))
@@ -145,15 +145,15 @@ def do_move(line):                        # move rs -> rd
 alu_ops = {'ADD':0x0000, 'SUB':0x0200, 'AND':0x0400, 'OR':0x0600,
                'XOR':0x0800, 'RSHIFT':0x0A00}
 
-def do_alu(line):                         # op r1 + r2 -> r3
-    store_insn(0x5000 | alu_ops[line[0]] | (regnum(line[1]) << 6) |
-                   (regnum(line[3]) << 3) | regnum(line[5]))
+def do_alu(line):                         # op ra + rb -> rc
+    store_insn(0x5000 | alu_ops[line[0]] | (regnum(line[5]) << 6) |
+                   (regnum(line[3]) << 3) | regnum(line[1]))
 
-def do_cmp(line):                         # cmp r1 - r2
-    store_insn(0x5C00 | (regnum(line[1]) << 6) | (regnum(line[3]) << 3))
+def do_cmp(line):                         # cmp ra - rb
+    store_insn(0x5C00 | (regnum(line[3]) << 3) | regnum(line[1]))
 
-def do_test(line):
-    store_insn(0x5E00 | (regnum(line[1]) << 6))
+def do_test(line):                        # test ra
+    store_insn(0x5E00 | regnum(line[1]))
 
 jmp_code = {'JMP':0x0000, 'JMP_Z':0x0200, 'JMP_NZ':0x0400, 'JMP_LT':0x0600,
                 'JMP_GT':0x0800, 'JMP_LE':0x0A00, 'JMP_GE':0x0C00} #
