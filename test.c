@@ -31,6 +31,33 @@ void test1(struct cpu *cpu)
     assert(cpu->R[1] == 15);
 }
 
+void test_sub_negative(struct cpu *cpu)
+{
+    zerocpu(cpu);
+    cpu->R[3] = 2;
+    cpu->R[2] = 5;
+    store2(cpu, 0x5253, 0);
+    
+    int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->R[1] == 65533); // 65533 is two's compliment of -3
+    assert(cpu->N == 1);
+};
+
+void test_sub_positive(struct cpu *cpu)
+{
+    zerocpu(cpu);
+    cpu->R[3] = 6;
+    cpu->R[2] = 4;
+    store2(cpu, 0x5253, 0);
+    
+    int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->R[1] == 2);
+    assert(cpu->N == 0);
+};
+
+
 char memory[64*1024];
 struct cpu cpu;
 
@@ -39,6 +66,8 @@ int main(int argc, char **argv)
     cpu.memory = memory;
     
     test1(&cpu);
+    test_sub_negative(&cpu);
+    test_sub_positive(&cpu);
 
     printf("all tests PASS\n");
 }
