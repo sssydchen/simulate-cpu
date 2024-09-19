@@ -14,7 +14,7 @@ void zerocpu(struct cpu *cpu)
     cpu->PC = cpu->SP = 0;
     for (int i = 0; i < 8; i++)
         cpu->R[i] = 0;
-    memset(cpu->memory, 0, 64*1024);
+    memset(cpu->memory, 0, 64 * 1024);
 }
 
 /* 0000 : 50f1      : ADD R3 + R6 -> R1
@@ -37,7 +37,7 @@ void test_sub_negative(struct cpu *cpu)
     cpu->R[3] = 2;
     cpu->R[2] = 5;
     store2(cpu, 0x5253, 0);
-    
+
     int val = emulate(cpu);
     assert(val == 0);
     assert(cpu->R[1] == 65533); // 65533 is two's compliment of -3
@@ -50,21 +50,29 @@ void test_sub_positive(struct cpu *cpu)
     cpu->R[3] = 6;
     cpu->R[2] = 4;
     store2(cpu, 0x5253, 0);
-    
+
     int val = emulate(cpu);
     assert(val == 0);
     assert(cpu->R[1] == 2);
     assert(cpu->N == 0);
 };
 
+char memory[64 * 1024];
+// void test_cpu_address_indirect(struct cpu *cpu, uint8_t insn)
+// {
+//     zerocpu(cpu);
+//     cpu->SP = 30;
+//     cpu->R[1] = 5;
+//     store2
+// }
 
-char memory[64*1024];
+char memory[64 * 1024];
 struct cpu cpu;
 
 int main(int argc, char **argv)
 {
     cpu.memory = memory;
-    
+
     test1(&cpu);
     test_sub_negative(&cpu);
     test_sub_positive(&cpu);
