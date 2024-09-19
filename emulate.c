@@ -1,6 +1,7 @@
 /*
  * file:        emulate-soln.c
  * description: solution to Lab 1
+ * random
  */
 
 #include <stdio.h>
