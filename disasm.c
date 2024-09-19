@@ -98,29 +98,29 @@ int disasm(uint16_t insn, uint16_t next, char *buf)
         return 4;
         break;
     case 0x7000:            /* JMP register indirect */
-        sprintf(buf, "JMP%s *R%d", jmp_suff[ccc], rc);
+        sprintf(buf, "JMP%s *R%d", jmp_suff[ccc], ra);
         break;
     case 0x8000:            /* CALL absolute */
         sprintf(buf, "CALL 0x%04x", next);
         return 4;
         break;
     case 0x9000:            /* CALL register indirect */
-        sprintf(buf, "CALL *R%d", rc);
+        sprintf(buf, "CALL *R%d", ra);
         break;
     case 0xA000:            /* RET */
         sprintf(buf, "RET");
         break;
     case 0xB000:            /* PUSH */
-        sprintf(buf, "PUSH R%d", rc);
+        sprintf(buf, "PUSH R%d", ra);
         break;
     case 0xC000:            /* POP */
-        sprintf(buf, "POP R%d", rc);
+        sprintf(buf, "POP R%d", ra);
         break;
     case 0xD000:            /* IN */
-        sprintf(buf, "IN R%d", rc);
+        sprintf(buf, "IN R%d", ra);
         break;
     case 0xE000:            /* OUT */
-        sprintf(buf, "OUT R%d", rc);
+        sprintf(buf, "OUT R%d", ra);
         break;
     case 0xF000:            /* HALT */
         sprintf(buf, "HALT");
@@ -133,7 +133,7 @@ static uint16_t load2(unsigned char *mem, uint16_t addr) {
     return mem[addr] | (mem[addr+1] << 8);
 }
 
-#if STANDALONE
+#ifdef STANDALONE
 unsigned char _mem[64*1024];
 int main(int argc, char **argv)
 {
