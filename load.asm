@@ -1,0 +1,4 @@
+LOAD R1 <- *0x5678
+LOAD.B R2 <- *0x5678
+LOAD R3 <- *R5
+LOAD.B R4 <- *R5

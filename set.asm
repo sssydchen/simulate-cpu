@@ -1,0 +1,3 @@
+SET R1 = 2
+SET R4 = 0
+# SET R6 = -4
