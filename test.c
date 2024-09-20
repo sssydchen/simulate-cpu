@@ -31,6 +31,76 @@ void test1(struct cpu *cpu)
     assert(cpu->R[1] == 15);
 }
 
+/*
+0000 : 1001 0002 : SET R1 = 0x0002
+0004 : 1004 0000 : SET R4 = 0x0000
+*/
+void test_set(struct cpu *cpu)
+{
+    zerocpu(cpu);
+
+    store2(cpu, 0x1001, 0); // SET R1 = 2
+    store2(cpu, 0x0002, 2); // Value 2
+    store2(cpu, 0x1004, 4); // SET R4 = 0
+    store2(cpu, 0x0000, 6); // Value 0
+
+    int val1 = emulate(cpu);
+    assert(val1 == 0);
+    assert(cpu->R[1] == 2);
+
+    int val2 = emulate(cpu);
+    assert(val2 == 0);
+    assert(cpu->R[4] == 0);
+}
+
+/**
+ * 0000 : 2001 5678 : LOAD R1 <- *0x5678
+ * 0004 : 2402 5678 : LOAD.B R2 <- *0x5678
+ * 0008 : 282b      : LOAD R3 <- *R5
+ * 000a : 2c2c      : LOAD.B R4 <- *R5
+ */
+void test_load(struct cpu *cpu)
+{
+    zerocpu(cpu);
+
+    // Load a 16-bit word from address 0x5678 into R1
+    store2(cpu, 0x2001, 0);
+    store2(cpu, 0x5678, 2);
+    store2(cpu, 0x1234, 0x5678);
+
+    int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->R[1] == 0x1234); // Check if R1 contains 0x1234
+
+    // Load an 8-bit byte from address 0x5678 into R2
+    store2(cpu, 0x2402, 4);
+    store2(cpu, 0x5678, 6);
+    cpu->memory[0x5678] = 0x12;
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->R[2] == 0x12);
+
+    // Load a 16-bit word from the address stored in R5 into R3
+    cpu->R[5] = 0x5678; // Set R5 to point to address 0x5678
+    store2(cpu, 0x282B, 8);
+    store2(cpu, 0x1234, 0x5678);
+
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->R[3] == 0x1234);
+
+    // Load an 8-bit byte from the address stored in R5 into R4
+    cpu->R[5] = 0x5678;
+    store2(cpu, 0x2C2C, 10);
+    cpu->memory[0x5678] = 0x34;
+
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->R[4] == 0x34);
+}
+
+
+
 void test_sub_negative(struct cpu *cpu)
 {
     zerocpu(cpu);
@@ -196,6 +266,8 @@ int main(int argc, char **argv)
     cpu.memory = memory;
 
     test1(&cpu);
+    test_set(&cpu);
+    test_load(&cpu);
     test_sub_negative(&cpu);
     test_sub_positive(&cpu);
     test_cpu_address_indirect(&cpu);
