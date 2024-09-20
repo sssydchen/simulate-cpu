@@ -31,6 +31,10 @@ void test1(struct cpu *cpu)
     assert(cpu->R[1] == 15);
 }
 
+/*
+0000 : 1001 0002 : SET R1 = 0x0002
+0004 : 1004 0000 : SET R4 = 0x0000
+*/
 void test_set(struct cpu *cpu)
 {
     zerocpu(cpu);
@@ -49,6 +53,12 @@ void test_set(struct cpu *cpu)
     assert(cpu->R[4] == 0);
 }
 
+/**
+ * 0000 : 2001 5678 : LOAD R1 <- *0x5678
+ * 0004 : 2402 5678 : LOAD.B R2 <- *0x5678
+ * 0008 : 282b      : LOAD R3 <- *R5
+ * 000a : 2c2c      : LOAD.B R4 <- *R5
+ */
 void test_load(struct cpu *cpu)
 {
     zerocpu(cpu);
@@ -88,6 +98,8 @@ void test_load(struct cpu *cpu)
     assert(val == 0);
     assert(cpu->R[4] == 0x34);
 }
+
+
 
 void test_sub_negative(struct cpu *cpu)
 {
