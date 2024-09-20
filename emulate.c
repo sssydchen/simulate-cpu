@@ -120,7 +120,7 @@ void alu(struct cpu *cpu, uint16_t insn) {
             result = cpu->R[reg_a];
             cpu->Z = (result == 0);  // Set Zero flag
             cpu->N = (result & 0x8000) != 0;  // Set Negative flag
-            return; 
+            return;
     }
 
     // Set the flags for non-CMP/TEST operations
@@ -129,6 +129,51 @@ void alu(struct cpu *cpu, uint16_t insn) {
     cpu->PC += 2; // Reset program counter
 }
 
+void call_register_indirect(struct cpu *cpu, uint16_t insn)
+{
+    uint8_t a = insn & 0x0007;         // get the register number from the last 3 bits.
+    cpu->SP = cpu->SP - 2;             // decrement SP by 2.
+    store2(cpu, cpu->PC + 2, cpu->SP); // store the next instruction in the address stored in SP.
+    cpu->PC = cpu->R[a];
+}
+
+void ret(struct cpu *cpu)
+{
+    cpu->PC = load2(cpu, cpu->SP);
+    cpu->SP = cpu->SP + 2;
+}
+
+void push(struct cpu *cpu, uint16_t insn)
+{
+    uint8_t a = insn & 0x7;
+    cpu->SP = cpu->SP - 2;
+    store2(cpu, cpu->R[a], cpu->SP);
+}
+
+void pop(struct cpu *cpu, uint16_t insn)
+{
+    uint8_t a = insn & 0x7;
+    cpu->R[a] = load2(cpu, cpu->SP);
+    cpu->SP = cpu->SP + 2;
+}
+
+void in(struct cpu *cpu, uint16_t insn)
+{
+    uint8_t a = insn & 0x7;
+    cpu->R[a] = fgetc(stdin);
+    cpu->PC = cpu->PC + 2;
+}
+
+void out(struct cpu *cpu, uint16_t insn)
+{
+    uint8_t a = insn & 0x7;
+    fputc(cpu->R[a], stdout);
+    cpu->PC = cpu->PC + 2;
+}
+
+/* emulate(struct cpu*) - emulate a single instruction
+ *     - returns 1 for halt, 0 for no halt
+ */
 int emulate(struct cpu *cpu)
 {
     uint16_t insn = load2(cpu, cpu->PC);
@@ -137,10 +182,12 @@ int emulate(struct cpu *cpu)
     if ((insn & 0xF000) == 0x1000)
     {
         set(cpu, insn);
+        return 0;
     }
     else if ((insn & 0xF000) == 0x2000)
     {
         load(cpu, insn);
+        return 0;
     }
     // else if ((insn & 0xF000) == 0x3000)
     // {
@@ -153,15 +200,50 @@ int emulate(struct cpu *cpu)
     else if ((insn & 0xF000) == 0x5000)
     {
         alu(cpu, insn);
+        return 0;
     }
     // else if ((insn & 0xF000) == 0x6000 || (insn & 0xF000) == 0x7000)
     // {
     //     jmp(cpu, insn);
     // }
-    else if ((insn & 0xF000) == 0xF000)
-    {
-        return 1;
-    }
 
-    return 0; // Continue emulation
+    else if ((insn & 0xF000) == 0x9000)
+    {
+        /* CALL(Register Indirect) */
+        call_register_indirect(cpu, insn);
+        return 0;
+    }
+    else if ((insn & 0xF000) == 0xA000)
+    {
+        /* RET */
+        ret(cpu);
+        return 0;
+    }
+    else if ((insn & 0xF000) == 0xB000)
+    {
+        /* PUSH */
+        push(cpu, insn);
+        return 0;
+    }
+    else if ((insn & 0xF000) == 0xC000)
+    {
+        pop(cpu, insn);
+        return 0;
+    }
+    else if ((insn & 0xF000) == 0xD000)
+    {
+        /* IN */
+        in(cpu, insn);
+        return 0;
+    }
+    else if ((insn & 0xF000) == 0xE000)
+    {
+        /* OUT */
+        out(cpu, insn);
+        return 0;
+    }
+    else
+    {
+        return 1; // HALT
+    }
 }
