@@ -131,7 +131,7 @@ void alu(struct cpu *cpu, uint16_t insn)
 
 void call_register_indirect(struct cpu *cpu, uint16_t insn)
 {
-    uint8_t a = insn % 0x7;            // get the register number from the last 3 bits.
+    uint8_t a = insn & 0x0007;         // get the register number from the last 3 bits.
     cpu->SP = cpu->SP - 2;             // decrement SP by 2.
     store2(cpu, cpu->PC + 2, cpu->SP); // store the next instruction in the address stored in SP.
     cpu->PC = cpu->R[a];
@@ -182,10 +182,12 @@ int emulate(struct cpu *cpu)
     if ((insn & 0xF000) == 0x1000)
     {
         set(cpu, insn);
+        return 0;
     }
     else if ((insn & 0xF000) == 0x2000)
     {
         load(cpu, insn);
+        return 0;
     }
     // else if ((insn & 0xF000) == 0x3000)
     // {
@@ -198,19 +200,14 @@ int emulate(struct cpu *cpu)
     else if ((insn & 0xF000) == 0x5000)
     {
         alu(cpu, insn);
+        return 0;
     }
     // else if ((insn & 0xF000) == 0x6000 || (insn & 0xF000) == 0x7000)
     // {
     //     jmp(cpu, insn);
     // }
-    else if ((insn & 0xF000) == 0xF000)
-    {
-        return 1;
-    }
 
-    return 0; // Continue emulation
-
-    if ((insn & 0xF000) == 0x9000)
+    else if ((insn & 0xF000) == 0x9000)
     {
         /* CALL(Register Indirect) */
         call_register_indirect(cpu, insn);
@@ -226,15 +223,18 @@ int emulate(struct cpu *cpu)
     {
         /* PUSH */
         push(cpu, insn);
+        return 0;
     }
     else if ((insn & 0xF000) == 0xC000)
     {
-        /* POP */
+        pop(cpu, insn);
+        return 0;
     }
     else if ((insn & 0xF000) == 0xD000)
     {
         /* IN */
         in(cpu, insn);
+        return 0;
     }
     else if ((insn & 0xF000) == 0xE000)
     {
@@ -244,6 +244,6 @@ int emulate(struct cpu *cpu)
     }
     else
     {
-        return 1;
+        return 1; // HALT
     }
 }
