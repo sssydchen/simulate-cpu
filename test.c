@@ -295,12 +295,22 @@ void test_in_and_out(struct cpu *cpu)
 }
 
 /*
-    HALT
+    0000 : 1001 054a : SET R1 = 0x054a
+    0004 : 1002 0591 : SET R2 = 0x0591
+    0008 : f000      : HALT
 */
 void test_halt(struct cpu *cpu)
 {
     zerocpu(cpu);
-    store2(cpu, 0xF000, 0);
+    store2(cpu, 0x1001, 0);
+    emulate(cpu);
+    store2(cpu, 0x054a, 2);
+    emulate(cpu);
+    store2(cpu, 0x1002, 4);
+    emulate(cpu);
+    store2(cpu, 0x0591, 6);
+    emulate(cpu);
+    store2(cpu, 0xf000, 4);
 
     int val = emulate(cpu);
     assert(val == 1);
