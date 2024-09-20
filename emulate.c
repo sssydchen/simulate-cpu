@@ -31,8 +31,8 @@ void set(struct cpu *cpu, uint16_t insn)
 void load(struct cpu *cpu, uint16_t insn)
 {
     int reg_a = insn & 0x7;
-    int is_indirect = (insn & 0x0800) != 0; // I bit (bit 11)
-    int is_byte = (insn & 0x0400) != 0;     // B bit (bit 10)
+    int is_indirect = (insn & 0x0800) != 0; // I bit (check bit 11; 0000 1000 0000 0000)
+    int is_byte = (insn & 0x0400) != 0;     // B bit (check bit 10; 0000 0100 0000 0000)
 
     if (is_indirect)
     {
@@ -87,39 +87,36 @@ void alu(struct cpu *cpu, uint16_t insn) {
     uint16_t result = 0;
 
     switch (op) {
-        case 0x0:  // ADD
-            // printf("ADD: R%d + R%d -> R%d\n", reg_a, reg_b, reg_c);
-            // printf("Values before: R%d = %d, R%d = %d\n", reg_a, cpu->R[reg_a], reg_b, cpu->R[reg_b]); 
+        case 0x0:  // 000: ADD Ra + Rb -> Rc
             result = cpu->R[reg_a] + cpu->R[reg_b];
             cpu->R[reg_c] = result;
-            // printf("Result: R%d = %d\n", reg_c, cpu->R[reg_c]);
             break;
-        case 0x1:  // SUB
+        case 0x1:  // 001: SUB Ra - Rb -> Rc
             result = cpu->R[reg_a] - cpu->R[reg_b];
             cpu->R[reg_c] = result;
             break;
-        case 0x2:  // AND
+        case 0x2:  // 010: AND Ra & Rb -> Rc
             result = cpu->R[reg_a] & cpu->R[reg_b];
             cpu->R[reg_c] = result;
             break;
-        case 0x3:  // OR
+        case 0x3:  // 011: OR Ra | Rb -> Rb
             result = cpu->R[reg_a] | cpu->R[reg_b];
-            cpu->R[reg_c] = result;
+            cpu->R[reg_b] = result;
             break;
-        case 0x4:  // XOR
+        case 0x4:  // 100: XOR Ra ^ Rb -> Rc
             result = cpu->R[reg_a] ^ cpu->R[reg_b];
             cpu->R[reg_c] = result;
             break;
-        case 0x5:  // SHIFTR
-            result = cpu->R[reg_a] >> cpu->R[reg_b];
-            cpu->R[reg_a] = result;
+        case 0x5:  // 101: SHIFTR Ra >> Rb -> Rb (“shift right”)
+            result= cpu->R[reg_a] >> cpu->R[reg_b];
+            cpu->R[reg_b] = result;
             break;
-        case 0x6:  // CMP
+        case 0x6:  // 110: CMP Ra – Rb (“compare”: compute Ra - Rb, discard the result but set N and Z
             result = cpu->R[reg_a] - cpu->R[reg_b];
             cpu->Z = (result == 0);  // Set Zero flag
             cpu->N = (result & 0x8000) != 0;  // Set Negative flag
             return;
-        case 0x7:  // TEST
+        case 0x7:  // 111: TEST Ra (set Z, N according to value in Ra)
             result = cpu->R[reg_a];
             cpu->Z = (result == 0);  // Set Zero flag
             cpu->N = (result & 0x8000) != 0;  // Set Negative flag
@@ -127,9 +124,9 @@ void alu(struct cpu *cpu, uint16_t insn) {
     }
 
     // Set the flags for non-CMP/TEST operations
-    cpu->Z = (result == 0);  // Set Zero flag if result is zero
-    cpu->N = (result & 0x8000) != 0;  // Set Negative flag if the high bit is set
-    cpu->PC += 2;
+    cpu->Z = (result == 0);  // If result is zero, set Z to 1
+    cpu->N = (result & 0x8000) != 0;  // If result is positive, set N to 0; if negative, set N to 1
+    cpu->PC += 2; // Reset program counter
 }
 
 int emulate(struct cpu *cpu)
