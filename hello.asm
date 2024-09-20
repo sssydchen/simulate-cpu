@@ -10,6 +10,7 @@ loop:	LOAD.B R1 <- *R0
 	SET R2 = 1
 	ADD R0+R2->R0
 	JMP loop
+
 done:	HALT
 
 hello_str:

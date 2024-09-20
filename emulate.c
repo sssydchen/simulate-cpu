@@ -78,57 +78,59 @@ void load(struct cpu *cpu, uint16_t insn)
     }
 }
 
-void alu(struct cpu *cpu, uint16_t insn) {
-    int op = (insn >> 9) & 0x7;  // Extract bits 9-11 for operation code (ooo)
-    int reg_a = insn & 0x7;  // Extract bits 0-2 for Ra
-    int reg_b = (insn >> 3) & 0x7;  // Extract bits 3-5 for Rb
-    int reg_c = (insn >> 6) & 0x7;  // Extract bits 6-8 for Rc
+void alu(struct cpu *cpu, uint16_t insn)
+{
+    int op = (insn >> 9) & 0x7;    // Extract bits 9-11 for operation code (ooo)
+    int reg_a = insn & 0x7;        // Extract bits 0-2 for Ra
+    int reg_b = (insn >> 3) & 0x7; // Extract bits 3-5 for Rb
+    int reg_c = (insn >> 6) & 0x7; // Extract bits 6-8 for Rc
 
     uint16_t result = 0;
 
-    switch (op) {
-        case 0x0:  // ADD
-            // printf("ADD: R%d + R%d -> R%d\n", reg_a, reg_b, reg_c);
-            // printf("Values before: R%d = %d, R%d = %d\n", reg_a, cpu->R[reg_a], reg_b, cpu->R[reg_b]); 
-            result = cpu->R[reg_a] + cpu->R[reg_b];
-            cpu->R[reg_c] = result;
-            // printf("Result: R%d = %d\n", reg_c, cpu->R[reg_c]);
-            break;
-        case 0x1:  // SUB
-            result = cpu->R[reg_a] - cpu->R[reg_b];
-            cpu->R[reg_c] = result;
-            break;
-        case 0x2:  // AND
-            result = cpu->R[reg_a] & cpu->R[reg_b];
-            cpu->R[reg_c] = result;
-            break;
-        case 0x3:  // OR
-            result = cpu->R[reg_a] | cpu->R[reg_b];
-            cpu->R[reg_c] = result;
-            break;
-        case 0x4:  // XOR
-            result = cpu->R[reg_a] ^ cpu->R[reg_b];
-            cpu->R[reg_c] = result;
-            break;
-        case 0x5:  // SHIFTR
-            result = cpu->R[reg_a] >> cpu->R[reg_b];
-            cpu->R[reg_a] = result;
-            break;
-        case 0x6:  // CMP
-            result = cpu->R[reg_a] - cpu->R[reg_b];
-            cpu->Z = (result == 0);  // Set Zero flag
-            cpu->N = (result & 0x8000) != 0;  // Set Negative flag
-            return;
-        case 0x7:  // TEST
-            result = cpu->R[reg_a];
-            cpu->Z = (result == 0);  // Set Zero flag
-            cpu->N = (result & 0x8000) != 0;  // Set Negative flag
-            return;
+    switch (op)
+    {
+    case 0x0: // ADD
+        // printf("ADD: R%d + R%d -> R%d\n", reg_a, reg_b, reg_c);
+        // printf("Values before: R%d = %d, R%d = %d\n", reg_a, cpu->R[reg_a], reg_b, cpu->R[reg_b]);
+        result = cpu->R[reg_a] + cpu->R[reg_b];
+        cpu->R[reg_c] = result;
+        // printf("Result: R%d = %d\n", reg_c, cpu->R[reg_c]);
+        break;
+    case 0x1: // SUB
+        result = cpu->R[reg_a] - cpu->R[reg_b];
+        cpu->R[reg_c] = result;
+        break;
+    case 0x2: // AND
+        result = cpu->R[reg_a] & cpu->R[reg_b];
+        cpu->R[reg_c] = result;
+        break;
+    case 0x3: // OR
+        result = cpu->R[reg_a] | cpu->R[reg_b];
+        cpu->R[reg_c] = result;
+        break;
+    case 0x4: // XOR
+        result = cpu->R[reg_a] ^ cpu->R[reg_b];
+        cpu->R[reg_c] = result;
+        break;
+    case 0x5: // SHIFTR
+        result = cpu->R[reg_a] >> cpu->R[reg_b];
+        cpu->R[reg_a] = result;
+        break;
+    case 0x6: // CMP
+        result = cpu->R[reg_a] - cpu->R[reg_b];
+        cpu->Z = (result == 0);          // Set Zero flag
+        cpu->N = (result & 0x8000) != 0; // Set Negative flag
+        return;
+    case 0x7: // TEST
+        result = cpu->R[reg_a];
+        cpu->Z = (result == 0);          // Set Zero flag
+        cpu->N = (result & 0x8000) != 0; // Set Negative flag
+        return;
     }
 
     // Set the flags for non-CMP/TEST operations
-    cpu->Z = (result == 0);  // Set Zero flag if result is zero
-    cpu->N = (result & 0x8000) != 0;  // Set Negative flag if the high bit is set
+    cpu->Z = (result == 0);          // Set Zero flag if result is zero
+    cpu->N = (result & 0x8000) != 0; // Set Negative flag if the high bit is set
     cpu->PC += 2;
 }
 

@@ -99,8 +99,9 @@ void test_load(struct cpu *cpu)
     assert(cpu->R[4] == 0x34);
 }
 
-
-
+/*
+    0000 : 5253      : SUB R3 - R2 -> R1
+*/
 void test_sub_negative(struct cpu *cpu)
 {
     zerocpu(cpu);
@@ -114,6 +115,9 @@ void test_sub_negative(struct cpu *cpu)
     assert(cpu->N == 1);
 };
 
+/*
+    0000 : 5253      : SUB R3 - R2 -> R1
+*/
 void test_sub_positive(struct cpu *cpu)
 {
     zerocpu(cpu);
@@ -128,46 +132,75 @@ void test_sub_positive(struct cpu *cpu)
 };
 
 /*
-    CALL *R3
-    SUB R3 - R2 -> R1
+    0000 : 1000 000a : SET R0 = 0x000a
+    0004 : 1005 000c : SET R5 = 0x000c
+    0008 : 9000      : CALL *R0
+    000a : e005      : OUT R5
+    000c : 0048      : OUT R5
 */
 void test_cpu_address_indirect(struct cpu *cpu)
 {
     zerocpu(cpu);
-    cpu->SP = 30;
-    cpu->R[3] = 5;
+    cpu->SP = 1000;
 
-    store2(cpu, 0x9003, 0); // adding the CALL instruction on R3.
-    store2(cpu, 0x5253, 2); // dummy instruction for setting it to PC + 2.
+    store2(cpu, 0x1000, 0);
+    store2(cpu, 0x000A, 2);
     int val = emulate(cpu);
+    store2(cpu, 0x1005, 4);
+    store2(cpu, 0x000C, 6);
+    emulate(cpu);
+    store2(cpu, 0x9000, 8);
+    val = emulate(cpu); // the CALL instruction is called here.
+
     assert(val == 0);
-    assert(cpu->memory[28] == 2);
-    assert(cpu->SP == 28);
-    assert(cpu->PC == 5);
+    assert(cpu->SP == 998);
+    assert(cpu->PC == 0x000A);
+
+    store2(cpu, 0xE005, 10);
+    store2(cpu, 0x0048, 12);
+    val = emulate(cpu);
+
+    assert(val == 0);
 }
 
 /*
-        RET
+0000 : 1000 000c : SET R0 = 0x000c
+0004 : 1005 000e : SET R5 = 0x000e
+0008 : 9000      : CALL *R0
+000a : e005      : OUT R5
+000c : a000      : RET
+000e : 0048      : RET
 */
 void test_ret(struct cpu *cpu)
 {
     zerocpu(cpu);
-    cpu->R[3] = 2;
-    cpu->R[2] = 1;
-    cpu->SP = 10;
-    cpu->PC = 100;
-    cpu->memory[10] = 50;
+    cpu->SP = 500;
 
-    store2(cpu, 0xA000, 100);
+    store2(cpu, 0x1000, 0);
+    store2(cpu, 0x000c, 2);
     int val = emulate(cpu);
 
+    store2(cpu, 0x1005, 4);
+    store2(cpu, 0x000e, 6);
+    val = emulate(cpu);
+
+    store2(cpu, 0x9000, 8);
+    val = emulate(cpu);
+
+    store2(cpu, 0xe005, 10);
+    val = emulate(cpu);
+    store2(cpu, 0xa000, 12);
+    val = emulate(cpu); // the RET instruction is called here.
     assert(val == 0);
-    assert(cpu->SP == 12);
-    assert(cpu->PC == 50);
+    assert(cpu->PC == 10);
+
+    store2(cpu, 0x0048, 14);
+    val = emulate(cpu);
+    assert(val == 0);
 }
 
 /*
-    CALL R6
+    PUSH R6
 */
 void test_push(struct cpu *cpu)
 {
