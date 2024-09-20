@@ -200,82 +200,97 @@ void test_ret(struct cpu *cpu)
 }
 
 /*
-    PUSH R6
+    0000 : 1001 04d2 : SET R1 = 0x04d2
+    0004 : 1002 162e : SET R2 = 0x162e
+    0008 : b001      : PUSH R1
+    000a : b002      : PUSH R2
+    000c : c001      : POP R1
+    000e : c002      : POP R2
 */
-void test_push(struct cpu *cpu)
+void test_push_and_pop(struct cpu *cpu)
 {
     zerocpu(cpu);
-    cpu->R[6] = 25;
-    cpu->SP = 10;
+    cpu->SP = 1024;
 
-    store2(cpu, 0xB006, 0);
+    store2(cpu, 0x1001, 0);
+    store2(cpu, 0x04d2, 2);
     int val = emulate(cpu);
 
+    store2(cpu, 0x1002, 4);
+    store2(cpu, 0x162e, 6);
+    val = emulate(cpu);
+
+    store2(cpu, 0xb001, 8); // PUSH instruction executed here.
+    val = emulate(cpu);
     assert(val == 0);
-    assert(cpu->SP == 8);
-    assert(cpu->memory[8] == 25);
+    assert(cpu->SP == 1022);
+    assert(load2(cpu, cpu->SP) == 1234);
+
+    store2(cpu, 0xb002, 10); // PUSH instruction executed here.
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->SP == 1020);
+    assert(load2(cpu, cpu->SP) == 5678);
+
+    store2(cpu, 0xc003, 12); // POP instruction executed here.
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->SP == 1022);
+    assert(cpu->R[3] == 5678);
+
+    store2(cpu, 0xc004, 14); // POP instruction executed here.
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->SP == 1024);
+    assert(cpu->R[4] == 1234);
 }
 
 /*
-    POP R7
+    0000 : d004      : IN R4
+    0002 : d005      : IN R5
+    0004 : e005      : OUT R5
+    0006 : e004      : OUT R4
 */
-void test_pop(struct cpu *cpu)
+void test_in_and_out(struct cpu *cpu)
 {
-    zerocpu(cpu);
-    cpu->SP = 10;
-    cpu->memory[10] = 100;
-
-    store2(cpu, 0xC007, 0);
-    int val = emulate(cpu);
-
-    assert(val == 0);
-    assert(cpu->SP == 12);
-    assert(cpu->R[7] == 100);
-}
-
-/*
-    IN R5;
-*/
-void test_in(struct cpu *cpu)
-{
-    FILE *original_stdin = stdin;
+    FILE *original_stdin = stdin; // redirecting stdin for testing purposes
     FILE *mock_stdin = tmpfile();
-    fputs("A", mock_stdin);
+    fputs("AB", mock_stdin);
     rewind(mock_stdin);
     stdin = mock_stdin;
-    zerocpu(cpu);
 
-    store2(cpu, 0xD005, 0);
-    int val = emulate(cpu);
-
-    assert(val == 0);
-    assert(cpu->PC == 2);
-    assert(cpu->R[5] == 'A');
-    stdin = original_stdin;
-}
-
-/*
-    OUT R5;
-*/
-void test_out(struct cpu *cpu)
-{
-    FILE *original_stdout = stdout;
+    FILE *original_stdout = stdout; // redirecting stdout for testing purposes
     FILE *mock_stdout = tmpfile();
     stdout = mock_stdout;
     char output_buffer[100];
-    zerocpu(cpu);
-    cpu->R[5] = 'A';
 
-    store2(cpu, 0xE005, 0);
+    zerocpu(cpu);
+
+    store2(cpu, 0xd004, 0);
     int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->R[4] == 'A');
+
+    store2(cpu, 0xd005, 2);
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->R[5] == 'B');
+
+    store2(cpu, 0xe005, 4);
+    val = emulate(cpu);
+    assert(val == 0);
+
+    store2(cpu, 0xe004, 6);
+    val = emulate(cpu);
+
     rewind(mock_stdout);
     fgets(output_buffer, sizeof(output_buffer), mock_stdout);
     fclose(mock_stdout);
-
     assert(val == 0);
-    assert(cpu->PC == 2);
-    assert(strcmp(output_buffer, "A") == 0);
+    assert(strcmp(output_buffer, "BA") == 0);
 
+    // clearing the redirects.
+    stdin = original_stdin;
     stdout = original_stdout;
 }
 
@@ -305,10 +320,8 @@ int main(int argc, char **argv)
     test_sub_positive(&cpu);
     test_cpu_address_indirect(&cpu);
     test_ret(&cpu);
-    test_push(&cpu);
-    test_pop(&cpu);
-    test_in(&cpu);
-    test_out(&cpu);
+    test_push_and_pop(&cpu);
+    test_in_and_out(&cpu);
     test_halt(&cpu);
 
     printf("all tests PASS\n");
