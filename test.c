@@ -131,7 +131,6 @@ void test_sub_positive(struct cpu *cpu)
     assert(cpu->N == 0);
 };
 
-<<<<<<< HEAD
 /**
  * 0000 : 56da      : OR R2 | R3 -> R3
  * 0002 : 57fd      : OR R5 | R7 -> R7
@@ -270,137 +269,190 @@ void test_test_negative(struct cpu *cpu) {
     assert(val == 0);
     assert(cpu->Z == 0);  
     assert(cpu->N == 1); 
-=======
+
 /*
-    CALL *R3
-    SUB R3 - R2 -> R1
+    0000 : 1000 000a : SET R0 = 0x000a
+    0004 : 1005 000c : SET R5 = 0x000c
+    0008 : 9000      : CALL *R0
+    000a : e005      : OUT R5
+    000c : 0048      : OUT R5
 */
 void test_cpu_address_indirect(struct cpu *cpu)
 {
     zerocpu(cpu);
-    cpu->SP = 30;
-    cpu->R[3] = 5;
+    cpu->SP = 1000;
 
-    store2(cpu, 0x9003, 0); // adding the CALL instruction on R3.
-    store2(cpu, 0x5253, 2); // dummy instruction for setting it to PC + 2.
+    store2(cpu, 0x1000, 0);
+    store2(cpu, 0x000A, 2);
     int val = emulate(cpu);
+    store2(cpu, 0x1005, 4);
+    store2(cpu, 0x000C, 6);
+    emulate(cpu);
+    store2(cpu, 0x9000, 8);
+    val = emulate(cpu); // the CALL instruction is called here.
+
     assert(val == 0);
-    assert(cpu->memory[28] == 2);
-    assert(cpu->SP == 28);
-    assert(cpu->PC == 5);
+    assert(cpu->SP == 998);
+    assert(cpu->PC == 0x000A);
+
+    store2(cpu, 0xE005, 10);
+    store2(cpu, 0x0048, 12);
+    val = emulate(cpu);
+
+    assert(val == 0);
 }
 
 /*
-        RET
+0000 : 1000 000c : SET R0 = 0x000c
+0004 : 1005 000e : SET R5 = 0x000e
+0008 : 9000      : CALL *R0
+000a : e005      : OUT R5
+000c : a000      : RET
+000e : 0048      : RET
 */
 void test_ret(struct cpu *cpu)
 {
     zerocpu(cpu);
-    cpu->R[3] = 2;
-    cpu->R[2] = 1;
-    cpu->SP = 10;
-    cpu->PC = 100;
-    cpu->memory[10] = 50;
+    cpu->SP = 500;
 
-    store2(cpu, 0xA000, 100);
+    store2(cpu, 0x1000, 0);
+    store2(cpu, 0x000c, 2);
     int val = emulate(cpu);
 
+    store2(cpu, 0x1005, 4);
+    store2(cpu, 0x000e, 6);
+    val = emulate(cpu);
+
+    store2(cpu, 0x9000, 8);
+    val = emulate(cpu);
+
+    store2(cpu, 0xe005, 10);
+    val = emulate(cpu);
+    store2(cpu, 0xa000, 12);
+    val = emulate(cpu); // the RET instruction is called here.
     assert(val == 0);
-    assert(cpu->SP == 12);
-    assert(cpu->PC == 50);
+    assert(cpu->PC == 10);
+
+    store2(cpu, 0x0048, 14);
+    val = emulate(cpu);
+    assert(val == 0);
 }
 
 /*
-    CALL R6
+    0000 : 1001 04d2 : SET R1 = 0x04d2
+    0004 : 1002 162e : SET R2 = 0x162e
+    0008 : b001      : PUSH R1
+    000a : b002      : PUSH R2
+    000c : c001      : POP R1
+    000e : c002      : POP R2
 */
-void test_push(struct cpu *cpu)
+void test_push_and_pop(struct cpu *cpu)
 {
     zerocpu(cpu);
-    cpu->R[6] = 25;
-    cpu->SP = 10;
+    cpu->SP = 1024;
 
-    store2(cpu, 0xB006, 0);
+    store2(cpu, 0x1001, 0);
+    store2(cpu, 0x04d2, 2);
     int val = emulate(cpu);
 
+    store2(cpu, 0x1002, 4);
+    store2(cpu, 0x162e, 6);
+    val = emulate(cpu);
+
+    store2(cpu, 0xb001, 8); // PUSH instruction executed here.
+    val = emulate(cpu);
     assert(val == 0);
-    assert(cpu->SP == 8);
-    assert(cpu->memory[8] == 25);
+    assert(cpu->SP == 1022);
+    assert(load2(cpu, cpu->SP) == 1234);
+
+    store2(cpu, 0xb002, 10); // PUSH instruction executed here.
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->SP == 1020);
+    assert(load2(cpu, cpu->SP) == 5678);
+
+    store2(cpu, 0xc003, 12); // POP instruction executed here.
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->SP == 1022);
+    assert(cpu->R[3] == 5678);
+
+    store2(cpu, 0xc004, 14); // POP instruction executed here.
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->SP == 1024);
+    assert(cpu->R[4] == 1234);
 }
 
 /*
-    POP R7
+    0000 : d004      : IN R4
+    0002 : d005      : IN R5
+    0004 : e005      : OUT R5
+    0006 : e004      : OUT R4
 */
-void test_pop(struct cpu *cpu)
+void test_in_and_out(struct cpu *cpu)
 {
-    zerocpu(cpu);
-    cpu->SP = 10;
-    cpu->memory[10] = 100;
-
-    store2(cpu, 0xC007, 0);
-    int val = emulate(cpu);
-
-    assert(val == 0);
-    assert(cpu->SP == 12);
-    assert(cpu->R[7] == 100);
-}
-
-/*
-    IN R5;
-*/
-void test_in(struct cpu *cpu)
-{
-    FILE *original_stdin = stdin;
+    FILE *original_stdin = stdin; // redirecting stdin for testing purposes
     FILE *mock_stdin = tmpfile();
-    fputs("A", mock_stdin);
+    fputs("AB", mock_stdin);
     rewind(mock_stdin);
     stdin = mock_stdin;
-    zerocpu(cpu);
 
-    store2(cpu, 0xD005, 0);
-    int val = emulate(cpu);
-
-    assert(val == 0);
-    assert(cpu->PC == 2);
-    assert(cpu->R[5] == 'A');
-    stdin = original_stdin;
-}
-
-/*
-    OUT R5;
-*/
-void test_out(struct cpu *cpu)
-{
-    FILE *original_stdout = stdout;
+    FILE *original_stdout = stdout; // redirecting stdout for testing purposes
     FILE *mock_stdout = tmpfile();
     stdout = mock_stdout;
     char output_buffer[100];
-    zerocpu(cpu);
-    cpu->R[5] = 'A';
 
-    store2(cpu, 0xE005, 0);
+    zerocpu(cpu);
+
+    store2(cpu, 0xd004, 0);
     int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->R[4] == 'A');
+
+    store2(cpu, 0xd005, 2);
+    val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->R[5] == 'B');
+
+    store2(cpu, 0xe005, 4);
+    val = emulate(cpu);
+    assert(val == 0);
+
+    store2(cpu, 0xe004, 6);
+    val = emulate(cpu);
+
     rewind(mock_stdout);
     fgets(output_buffer, sizeof(output_buffer), mock_stdout);
     fclose(mock_stdout);
-
     assert(val == 0);
-    assert(cpu->PC == 2);
-    assert(strcmp(output_buffer, "A") == 0);
+    assert(strcmp(output_buffer, "BA") == 0);
 
+    // clearing the redirects.
+    stdin = original_stdin;
     stdout = original_stdout;
 }
 
 /*
-    HALT
+    0000 : 1001 054a : SET R1 = 0x054a
+    0004 : 1002 0591 : SET R2 = 0x0591
+    0008 : f000      : HALT
 */
 void test_halt(struct cpu *cpu)
 {
     zerocpu(cpu);
-    store2(cpu, 0xF000, 0);
+    store2(cpu, 0x1001, 0);
+    emulate(cpu);
+    store2(cpu, 0x054a, 2);
+    emulate(cpu);
+    store2(cpu, 0x1002, 4);
+    emulate(cpu);
+    store2(cpu, 0x0591, 6);
+    emulate(cpu);
+    store2(cpu, 0xf000, 4);
 
     int val = emulate(cpu);
     assert(val == 1);
->>>>>>> 7e8701ac358308f9ce1d354ddd21c2db6a91b15a
 }
 
 char memory[64 * 1024];
@@ -415,7 +467,7 @@ int main(int argc, char **argv)
     test_load(&cpu);
     test_sub_negative(&cpu);
     test_sub_positive(&cpu);
-<<<<<<< HEAD
+  
     test_or(&cpu);
     test_xor(&cpu);
     test_rshift(&cpu);
@@ -425,15 +477,13 @@ int main(int argc, char **argv)
     test_test_positive(&cpu);
     test_test_zero(&cpu);
     test_test_negative(&cpu);
-=======
+  
     test_cpu_address_indirect(&cpu);
     test_ret(&cpu);
-    test_push(&cpu);
-    test_pop(&cpu);
-    test_in(&cpu);
-    test_out(&cpu);
+    test_push_and_pop(&cpu);
+    test_in_and_out(&cpu);
     test_halt(&cpu);
->>>>>>> 7e8701ac358308f9ce1d354ddd21c2db6a91b15a
+  
 
     printf("all tests PASS\n");
 }
