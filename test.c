@@ -39,10 +39,10 @@ void test_set(struct cpu *cpu)
 {
     zerocpu(cpu);
 
-    store2(cpu, 0x1001, 0); 
-    store2(cpu, 0x0002, 2); 
-    store2(cpu, 0x1004, 4); 
-    store2(cpu, 0x0000, 6); 
+    store2(cpu, 0x1001, 0);
+    store2(cpu, 0x0002, 2);
+    store2(cpu, 0x1004, 4);
+    store2(cpu, 0x0000, 6);
 
     int val1 = emulate(cpu);
     assert(val1 == 0);
@@ -135,18 +135,19 @@ void test_sub_positive(struct cpu *cpu)
  * 0000 : 56da      : OR R2 | R3 -> R3
  * 0002 : 57fd      : OR R5 | R7 -> R7
  */
-void test_or(struct cpu *cpu) {
+void test_or(struct cpu *cpu)
+{
     zerocpu(cpu);
 
     cpu->R[2] = 0x1712; // 0001 0111 0001 0010
     cpu->R[3] = 0xF4D6; // 1111 0100 1101 0110
-    store2(cpu, 0x56DA, 0);  
+    store2(cpu, 0x56DA, 0);
     int val1 = emulate(cpu);
     assert(val1 == 0);
     assert(cpu->R[3] == 0xF7D6); // 1111 0111 1101 0110
 
-    cpu->R[5] = 0x28AF; // 0010 1000 1010 1111
-    cpu->R[7] = 0x5036; // 0101 0000 0011 0110 
+    cpu->R[5] = 0x28AF;     // 0010 1000 1010 1111
+    cpu->R[7] = 0x5036;     // 0101 0000 0011 0110
     store2(cpu, 0x57FD, 2); // Instruction is 2 byte long
     int val2 = emulate(cpu);
     assert(val2 == 0);
@@ -157,118 +158,126 @@ void test_or(struct cpu *cpu) {
  * 0000 : 58d1      : XOR R1 ^ R2 -> R3
  * 0002 : 592c      : XOR R4 ^ R5 -> R4
  */
-void test_xor(struct cpu *cpu) {
+void test_xor(struct cpu *cpu)
+{
     zerocpu(cpu);
-    cpu->R[1] = 0x7612; // 0111 0110 0001 0010 
-    cpu->R[2] = 0x2189; // 0010 0001 1000 1001 
-    store2(cpu, 0x58d1, 0);  
+    cpu->R[1] = 0x7612; // 0111 0110 0001 0010
+    cpu->R[2] = 0x2189; // 0010 0001 1000 1001
+    store2(cpu, 0x58d1, 0);
 
     int val1 = emulate(cpu);
     assert(val1 == 0);
-    assert(cpu->R[3] == 0x579B);  // 0101 0111 1001 1011
+    assert(cpu->R[3] == 0x579B); // 0101 0111 1001 1011
 
-    cpu->R[4] = 0x7612; 
-    cpu->R[5] = 0x2189; 
-    store2(cpu, 0x592c, 2);  
+    cpu->R[4] = 0x7612;
+    cpu->R[5] = 0x2189;
+    store2(cpu, 0x592c, 2);
 
     int val2 = emulate(cpu);
     assert(val2 == 0);
-    assert(cpu->R[4] == 0x579B);  
+    assert(cpu->R[4] == 0x579B);
 }
 
 /**
  * 0000 : 5b22      : RSHIFT R2 >> R4 -> R4
  */
-void test_rshift(struct cpu *cpu) {
+void test_rshift(struct cpu *cpu)
+{
     zerocpu(cpu);
-    cpu->R[2] = 0x0103; // 0000 0001 0000 0011 
-    cpu->R[4] = 0x2; 
-    store2(cpu, 0x5B22, 0); 
+    cpu->R[2] = 0x0103; // 0000 0001 0000 0011
+    cpu->R[4] = 0x2;
+    store2(cpu, 0x5B22, 0);
 
     int val = emulate(cpu);
     assert(val == 0);
-    assert(cpu->R[4] == 0x40);  // 0000 0000 0100 0000 
+    assert(cpu->R[4] == 0x40); // 0000 0000 0100 0000
 }
 
 /**
  * 0000 : 5c11      : CMP R1 - R2
  */
-void test_cmp_positive(struct cpu *cpu) {
+void test_cmp_positive(struct cpu *cpu)
+{
     zerocpu(cpu);
     cpu->R[1] = 4;
-    cpu->R[2] = 1; 
-    store2(cpu, 0x5c11, 0); 
+    cpu->R[2] = 1;
+    store2(cpu, 0x5c11, 0);
 
     int val = emulate(cpu);
     assert(val == 0);
-    assert(cpu->Z == 0); 
-    assert(cpu->N == 0); 
+    assert(cpu->Z == 0);
+    assert(cpu->N == 0);
 }
 
-void test_cmp_zero(struct cpu *cpu) {
+void test_cmp_zero(struct cpu *cpu)
+{
     zerocpu(cpu);
     cpu->R[1] = 4;
-    cpu->R[2] = 1; 
-    store2(cpu, 0x5c11, 0); 
+    cpu->R[2] = 1;
+    store2(cpu, 0x5c11, 0);
 
     int val = emulate(cpu);
     assert(val == 0);
-    assert(cpu->Z == 0); 
-    assert(cpu->N == 0);  
+    assert(cpu->Z == 0);
+    assert(cpu->N == 0);
 }
 
-void test_cmp_negative(struct cpu *cpu) {
+void test_cmp_negative(struct cpu *cpu)
+{
     zerocpu(cpu);
-    cpu->R[1] = 1; 
-    cpu->R[2] = 4; 
-    store2(cpu, 0x5c11, 0); 
+    cpu->R[1] = 1;
+    cpu->R[2] = 4;
+    store2(cpu, 0x5c11, 0);
 
     int val = emulate(cpu);
     assert(val == 0);
-    assert(cpu->Z == 0);  
+    assert(cpu->Z == 0);
     assert(cpu->N == 1);
 }
 
 /**
  * 0000 : 5e04      : TEST R4
  */
-void test_test_positive(struct cpu *cpu) {
+void test_test_positive(struct cpu *cpu)
+{
     zerocpu(cpu);
-    cpu->R[4] = 3; 
-    store2(cpu, 0x5e04, 0); 
+    cpu->R[4] = 3;
+    store2(cpu, 0x5e04, 0);
 
     int val = emulate(cpu);
     assert(val == 0);
-    assert(cpu->Z == 0); 
-    assert(cpu->N == 0); 
+    assert(cpu->Z == 0);
+    assert(cpu->N == 0);
 }
 
 /**
  * 0000 : 5e04      : TEST R4
  */
-void test_test_zero(struct cpu *cpu) {
+void test_test_zero(struct cpu *cpu)
+{
     zerocpu(cpu);
-    cpu->R[4] = 0; 
-    store2(cpu, 0x5e04, 0); 
+    cpu->R[4] = 0;
+    store2(cpu, 0x5e04, 0);
 
     int val = emulate(cpu);
     assert(val == 0);
-    assert(cpu->Z == 1); 
-    assert(cpu->N == 0); 
+    assert(cpu->Z == 1);
+    assert(cpu->N == 0);
 }
 
 /**
  * 0000 : 5e04      : TEST R4
  */
-void test_test_negative(struct cpu *cpu) {
+void test_test_negative(struct cpu *cpu)
+{
     zerocpu(cpu);
-    cpu->R[4] = -3; 
-    store2(cpu, 0x5e04, 0); 
+    cpu->R[4] = -3;
+    store2(cpu, 0x5e04, 0);
 
     int val = emulate(cpu);
     assert(val == 0);
-    assert(cpu->Z == 0);  
-    assert(cpu->N == 1); 
+    assert(cpu->Z == 0);
+    assert(cpu->N == 1);
 }
 
 /**
@@ -277,60 +286,61 @@ void test_test_negative(struct cpu *cpu) {
  * 0008 : 382b      : STORE R3 -> *R5
  * 000a : 3c2c      : STORE.B R4 -> *R5
  */
-void test_store_word_direct(struct cpu *cpu) {
+void test_store_word_direct(struct cpu *cpu)
+{
     zerocpu(cpu);
 
     cpu->R[1] = 0xABCD;
 
-    store2(cpu, 0x3001, 0);  
-    store2(cpu, 0x5678, 2);   
+    store2(cpu, 0x3001, 0);
+    store2(cpu, 0x5678, 2);
 
     int val = emulate(cpu);
-    assert(cpu->memory[0x5678] == 0xCD);       
-    assert(cpu->memory[0x5678 + 1] == 0xAB);  
+    assert(cpu->memory[0x5678] == 0xCD);
+    assert(cpu->memory[0x5678 + 1] == 0xAB);
 }
 
 /**
  *  0004 : 3402 5678 : STORE.B R2 -> *0x5678
  */
-void test_store_byte_direct(struct cpu *cpu) {
+void test_store_byte_direct(struct cpu *cpu)
+{
     zerocpu(cpu);
 
-    cpu->R[2] = 0x1234; 
+    cpu->R[2] = 0x1234;
 
-    store2(cpu, 0x3402, 0);  
-    store2(cpu, 0x5678, 2);  
-
-    int val = emulate(cpu); 
-    assert(cpu->memory[0x5678] == 0x34); 
-}
-
-void test_store_word_indirect(struct cpu *cpu) {
-    zerocpu(cpu);
-
-    cpu->R[3] = 0x5678;  
-    cpu->R[5] = 0x2000; 
-
-    store2(cpu, 0x382B, 0); 
+    store2(cpu, 0x3402, 0);
+    store2(cpu, 0x5678, 2);
 
     int val = emulate(cpu);
-    assert(cpu->memory[0x2000] == 0x78);      
-    assert(cpu->memory[0x2000 + 1] == 0x56);  
-
+    assert(cpu->memory[0x5678] == 0x34);
 }
 
-void test_store_byte_indirect(struct cpu *cpu) {
+void test_store_word_indirect(struct cpu *cpu)
+{
     zerocpu(cpu);
 
-    cpu->R[4] = 0x5678; 
-    cpu->R[5] = 0x2000; 
+    cpu->R[3] = 0x5678;
+    cpu->R[5] = 0x2000;
 
-    store2(cpu, 0x3C2C, 0); 
+    store2(cpu, 0x382B, 0);
+
     int val = emulate(cpu);
-    assert(cpu->memory[0x2000] == 0x78); 
+    assert(cpu->memory[0x2000] == 0x78);
+    assert(cpu->memory[0x2000 + 1] == 0x56);
 }
 
+void test_store_byte_indirect(struct cpu *cpu)
+{
+    zerocpu(cpu);
 
+    cpu->R[4] = 0x5678;
+    cpu->R[5] = 0x2000;
+
+    store2(cpu, 0x3C2C, 0);
+    int val = emulate(cpu);
+    assert(cpu->memory[0x2000] == 0x78);
+}
 
 /*
     0000 : 1000 000a : SET R0 = 0x000a
@@ -529,10 +539,7 @@ int main(int argc, char **argv)
     test_load(&cpu);
     test_sub_negative(&cpu);
     test_sub_positive(&cpu);
-<<<<<<< HEAD
-=======
-  
->>>>>>> 585eb1b438dc0eb3f3d9a108087cd0894cb255d3
+
     test_or(&cpu);
     test_xor(&cpu);
     test_rshift(&cpu);
@@ -542,24 +549,16 @@ int main(int argc, char **argv)
     test_test_positive(&cpu);
     test_test_zero(&cpu);
     test_test_negative(&cpu);
-<<<<<<< HEAD
     test_store_word_direct(&cpu);
     test_store_byte_direct(&cpu);
     test_store_word_indirect(&cpu);
     test_store_byte_indirect(&cpu);
 
-=======
-  
->>>>>>> 585eb1b438dc0eb3f3d9a108087cd0894cb255d3
     test_cpu_address_indirect(&cpu);
     test_ret(&cpu);
     test_push_and_pop(&cpu);
     test_in_and_out(&cpu);
     test_halt(&cpu);
-<<<<<<< HEAD
-=======
-  
->>>>>>> 585eb1b438dc0eb3f3d9a108087cd0894cb255d3
 
     printf("all tests PASS\n");
 }
