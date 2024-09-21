@@ -282,9 +282,6 @@ void test_test_negative(struct cpu *cpu)
 
 /**
  * 0000 : 3001 5678 : STORE R1 -> *0x5678
-
- * 0008 : 382b      : STORE R3 -> *R5
- * 000a : 3c2c      : STORE.B R4 -> *R5
  */
 void test_store_word_direct(struct cpu *cpu)
 {
@@ -316,6 +313,9 @@ void test_store_byte_direct(struct cpu *cpu)
     assert(cpu->memory[0x5678] == 0x34);
 }
 
+/**
+ * 0008 : 382b      : STORE R3 -> *R5
+ */
 void test_store_word_indirect(struct cpu *cpu)
 {
     zerocpu(cpu);
@@ -330,6 +330,9 @@ void test_store_word_indirect(struct cpu *cpu)
     assert(cpu->memory[0x2000 + 1] == 0x56);
 }
 
+/**
+ * 000a : 3c2c      : STORE.B R4 -> *R5
+ */
 void test_store_byte_indirect(struct cpu *cpu)
 {
     zerocpu(cpu);
@@ -340,6 +343,260 @@ void test_store_byte_indirect(struct cpu *cpu)
     store2(cpu, 0x3C2C, 0);
     int val = emulate(cpu);
     assert(cpu->memory[0x2000] == 0x78);
+}
+
+/**
+ *  0000 : 4021      : MOV R1 -> R2
+ *  0002 : 4038      : MOV SP -> R3
+ *  0004 : 4082      : MOV R2 -> SP
+ */
+void test_move_reg_to_reg(struct cpu *cpu)
+{
+    zerocpu(cpu);
+
+    cpu->R[1] = 0x1111;
+    store2(cpu, 0x4021, 0);
+    int val = emulate(cpu);
+    assert(cpu->R[2] == 0x1111);
+}
+
+void test_move_sp_to_reg(struct cpu *cpu)
+{
+    zerocpu(cpu);
+
+    cpu->SP = 0x2222;
+    store2(cpu, 0x4038, 0);
+    int val = emulate(cpu);
+    assert(cpu->R[3] == 0x2222);
+}
+
+void test_move_reg_to_sp(struct cpu *cpu)
+{
+    zerocpu(cpu);
+
+    cpu->R[2] = 0x3333;
+    store2(cpu, 0x4082, 0);
+    int val = emulate(cpu);
+    assert(cpu->SP == 0x3333);
+}
+
+/**
+ * 0000 : 6000 0001 : JMP 0x0001
+ */
+void test_jmp_direct(struct cpu *cpu) {
+    zerocpu(cpu);
+
+    store2(cpu, 0x6000, 0);  
+    store2(cpu, 0x0001, 2);  
+
+    int val = emulate(cpu);
+
+    assert(val == 0);
+    assert(cpu->PC == 0x0001);
+}
+
+/**
+ * 0004 : 6200 a2d3 : JMP_Z 0xa2d3
+ */
+void test_jmp_z_direct(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->Z = 1;
+
+    store2(cpu, 0x6200, 0);  
+    store2(cpu, 0xa2d3, 2);  
+
+    int val = emulate(cpu);
+
+    assert(val == 0);
+    assert(cpu->PC == 0xa2d3);
+}
+
+/**
+ * 0008 : 6400 71bc : JMP_NZ 0x71bc
+ */
+void test_jmp_nz_direct(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->Z = 0;
+
+    store2(cpu, 0x6400, 0);  
+    store2(cpu, 0x71bc, 2);  
+
+    int val = emulate(cpu);
+
+    assert(val == 0);
+    assert(cpu->PC == 0x71bc);
+}
+
+/**
+ * 000c : 6600 cb17 : JMP_LT 0xcb17
+ */
+void test_jmp_lt_direct(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->N = 1;
+
+    store2(cpu, 0x6600, 0);  
+    store2(cpu, 0xcb17, 2);  
+
+    int val = emulate(cpu);
+
+    assert(val == 0);
+    assert(cpu->PC == 0xcb17);
+}
+
+/**
+ * 0010 : 6800 affa : JMP_GT 0xaffa
+ */
+void test_jmp_gt_direct(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->N = 0;
+    cpu->Z = 0;
+
+    store2(cpu, 0x6800, 0);  
+    store2(cpu, 0xaffa, 2);  
+
+    int val = emulate(cpu);
+
+    assert(val == 0);
+    assert(cpu->PC == 0xaffa);
+}
+
+/**
+ * 0014 : 6a00 7887 : JMP_LE 0x7887
+ */
+void test_jmp_le_direct(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->N = 1;
+    cpu->Z = 0;
+
+    store2(cpu, 0x6a00, 0); 
+    store2(cpu, 0x7887, 2);  
+
+    int val = emulate(cpu);
+
+    assert(val == 0);
+    assert(cpu->PC == 0x7887);
+}
+
+/**
+ * 0018 : 6c00 1000 : JMP_GE 0x1000
+ */
+void test_jmp_ge_direct(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->N = 0;
+
+    store2(cpu, 0x6c00, 0);  
+    store2(cpu, 0x1000, 2);  
+
+    int val = emulate(cpu);
+
+    assert(val == 0);
+    assert(cpu->PC == 0x1000);
+}
+
+/**
+ * 0000 : 7001      : JMP *R1
+ */
+void test_jmp_indirect(struct cpu *cpu) {
+    zerocpu(cpu);
+
+    cpu->R[1] = 0x1111;
+    store2(cpu, 0x7001, 0);  
+
+    int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->PC == 0x1111);
+}
+
+/**
+ * 0002 : 7200      : JMP_Z *R0
+ */
+void test_jmp_z_indirect(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->Z = 1;
+
+    cpu->R[0] = 0x2222;
+    store2(cpu, 0x7200, 0);   
+
+    int val = emulate(cpu);
+
+    assert(val == 0);
+    assert(cpu->PC == 0x2222);
+}
+
+/**
+ * 0004 : 7402      : JMP_NZ *R2
+ */
+void test_jmp_nz_indirect(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->Z = 0;
+
+    cpu->R[2] = 0x3334; 
+    store2(cpu, 0x7402, 0);  
+
+    int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->PC == 0x3334);
+}
+
+/**
+ * 0006 : 7604      : JMP_LT *R4
+ */
+void test_jmp_lt_indirect(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->N = 1;
+    cpu->R[4] = 0x6776; 
+    store2(cpu, 0x7604, 0);    
+
+    int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->PC == 0x6776);
+}
+
+/**
+ * 0008 : 7806      : JMP_GT *R6
+ */
+void test_jmp_gt_indirect(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->N = 0;
+    cpu->Z = 0;
+
+    cpu->R[6] = 0x1990; 
+    store2(cpu, 0x7806, 0);  
+
+    int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->PC == 0x1990);
+}
+
+/**
+ * 000a : 7a07      : JMP_LE *R7
+ */
+void test_jmp_le_indirect(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->N = 1;
+    cpu->Z = 0;
+
+    cpu->R[7] = 0xFFFF; 
+    store2(cpu, 0x7a07, 0);  
+
+    int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->PC == 0xFFFF);
+}
+
+/**
+ * 000c : 7c03      : JMP_GE *R3
+ */
+void test_jmp_ge_indirect(struct cpu *cpu) {
+    zerocpu(cpu);
+    cpu->N = 0;
+
+    cpu->R[3] = 0xBCDE; 
+    store2(cpu, 0x7c03, 0);    
+
+    int val = emulate(cpu);
+    assert(val == 0);
+    assert(cpu->PC == 0xBCDE);
 }
 
 /*
@@ -581,10 +838,31 @@ int main(int argc, char **argv)
     test_test_positive(&cpu);
     test_test_zero(&cpu);
     test_test_negative(&cpu);
+
     test_store_word_direct(&cpu);
     test_store_byte_direct(&cpu);
     test_store_word_indirect(&cpu);
     test_store_byte_indirect(&cpu);
+
+    test_move_reg_to_reg(&cpu);
+    test_move_reg_to_sp(&cpu);
+    test_move_sp_to_reg(&cpu);
+
+    test_jmp_direct(&cpu);
+    test_jmp_z_direct(&cpu);
+    test_jmp_nz_direct(&cpu);
+    test_jmp_lt_direct(&cpu);
+    test_jmp_gt_direct(&cpu);
+    test_jmp_le_direct(&cpu);
+    test_jmp_ge_direct(&cpu);
+
+    test_jmp_indirect(&cpu);
+    test_jmp_z_indirect(&cpu);
+    test_jmp_nz_indirect(&cpu);
+    test_jmp_lt_indirect(&cpu);
+    test_jmp_gt_indirect(&cpu);
+    test_jmp_le_indirect(&cpu);
+    test_jmp_ge_indirect(&cpu);
 
     test_cpu_specified_address(&cpu);
     test_cpu_address_indirect(&cpu);

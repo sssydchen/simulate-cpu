@@ -155,41 +155,48 @@ void alu(struct cpu *cpu, uint16_t insn)
 
     uint16_t result = 0;
 
-    switch (op)
+    if ((insn & 0x0E00) == 0x0000) // 000: ADD Ra + Rb -> Rc
     {
-    case 0x0: // 000: ADD Ra + Rb -> Rc
         result = cpu->R[reg_a] + cpu->R[reg_b];
         cpu->R[reg_c] = result;
-        break;
-    case 0x1: // 001: SUB Ra - Rb -> Rc
+    }
+    else if ((insn & 0x0E00) == 0x0200) // 001: SUB Ra - Rb -> Rc
+    {
         result = cpu->R[reg_a] - cpu->R[reg_b];
         cpu->R[reg_c] = result;
-        break;
-    case 0x2: // 010: AND Ra & Rb -> Rc
+    }
+    else if ((insn & 0x0E00) == 0x0400) // 010: AND Ra & Rb -> Rc
+    {
         result = cpu->R[reg_a] & cpu->R[reg_b];
         cpu->R[reg_c] = result;
-        break;
-    case 0x3: // 011: OR Ra | Rb -> Rb
+    }
+    else if ((insn & 0x0E00) == 0x0600) // 011: OR Ra | Rb -> Rb
+    {
         result = cpu->R[reg_a] | cpu->R[reg_b];
         cpu->R[reg_b] = result;
-        break;
-    case 0x4: // 100: XOR Ra ^ Rb -> Rc
+    }
+    else if ((insn & 0x0E00) == 0x0800) // 100: XOR Ra ^ Rb -> Rc
+    {
         result = cpu->R[reg_a] ^ cpu->R[reg_b];
         cpu->R[reg_c] = result;
-        break;
-    case 0x5: // 101: SHIFTR Ra >> Rb -> Rb (“shift right”)
+    }
+    else if ((insn & 0x0E00) == 0x0A00) // 101: SHIFTR Ra >> Rb -> Rb
+    {
         result = cpu->R[reg_a] >> cpu->R[reg_b];
         cpu->R[reg_b] = result;
-        break;
-    case 0x6: // 110: CMP Ra – Rb (“compare”: compute Ra - Rb, discard the result but set N and Z
+    }
+    else if ((insn & 0x0E00) == 0x0C00) // 110: CMP Ra – Rb (“compare”: compute Ra - Rb, discard the result but set N and Z
+    {
         result = cpu->R[reg_a] - cpu->R[reg_b];
-        cpu->Z = (result == 0);          // Set Zero flag
-        cpu->N = (result & 0x8000) != 0; // Set Negative flag
+        cpu->Z = (result == 0);
+        cpu->N = (result & 0x8000) != 0;
         return;
-    case 0x7: // 111: TEST Ra (set Z, N according to value in Ra)
+    }
+    else if ((insn & 0x0E00) == 0x0E00) // 111: TEST Ra (set Z, N according to Ra)
+    {
         result = cpu->R[reg_a];
-        cpu->Z = (result == 0);          // Set Zero flag
-        cpu->N = (result & 0x8000) != 0; // Set Negative flag
+        cpu->Z = (result == 0);
+        cpu->N = (result & 0x8000) != 0;
         return;
     }
 
@@ -199,14 +206,61 @@ void alu(struct cpu *cpu, uint16_t insn)
     cpu->PC += 2;                    // Reset program counter
 }
 
+// void jmp(struct cpu *cpu, uint16_t insn)
+// {
+    
+//     int condition = (insn >> 8) & 0x7;
+//     int reg_a = insn & 0x7; 
+//     int is_direct = (insn & 0x0800) == 0;
+
+//     int jump = 0;
+//     if (condition == 0x0) {        
+//         jump = 1;
+//     } else if (condition == 0x1) {  
+//         jump = (cpu->Z == 1);
+//     } else if (condition == 0x2) {  
+//         jump = (cpu->Z == 0);
+//     } else if (condition == 0x3) {   
+//         jump = (cpu->N == 1);
+//     } else if (condition == 0x4) {   
+//         jump = (cpu->N == 0 && cpu->Z == 0);
+//     } else if (condition == 0x5) {   
+//         jump = (cpu->N == 1 || cpu->Z == 1);
+//     } else if (condition == 0x6) {   
+//         jump = (cpu->N == 0);
+//     } else {                        
+//         printf("Illegal JMP condition\n");
+//         return;
+//     }
+
+//     if (jump) {
+//         if (is_direct) {
+//             uint16_t address = load2(cpu, cpu->PC + 2); // Jump to the constant address (specified in bytes 3 and 4)
+//             cpu->PC = address; 
+//         } else {
+//             cpu->PC = cpu->R[reg_a]; // Indirect jump: Jump to the address in register Ra
+//         }
+//     } else { // If condition is false, just increment the PC
+//         if (is_direct) {
+//             cpu->PC += 4; 
+//         } else {
+//             cpu->PC += 2; 
+//         }
+//     }
+// }
+
 void jmp_to_explicit_addr(struct cpu *cpu, uint16_t insn)
 {
     int cond = (insn >> 9) & 0x7;
     int is_true = 0;
+    uint16_t target_address = load2(cpu, cpu->PC + 2);
+
     switch (cond)
     {
     case 0x0: // JMP(unconditional)
-        cpu->PC = load2(cpu, cpu->PC + 2);
+        cpu->PC = target_address;
+        // printf("CPU->PC 0x%04X\n", cpu->PC);
+        is_true = 1;
         break;
     case 0x1: // JMP_Z
         if (cpu->Z == 1)
@@ -439,11 +493,18 @@ int emulate(struct cpu *cpu)
     else if ((insn & 0xF000) == 0x6000)
     {
         jmp_to_explicit_addr(cpu, insn);
+        return 0;
     }
     else if ((insn & 0xF000) == 0x7000)
     {
         jmp_to_register_addr(cpu, insn);
+        return 0;
     }
+    // else if ((insn & 0xF000) == 0x6000 || (insn & 0xF000) == 0x7000)
+    // {
+    //     jmp(cpu, insn);
+    //     return 0;
+    // }
     else if ((insn & 0xF000) == 0x8000)
     {
         /* CALL(Specified Address) */
