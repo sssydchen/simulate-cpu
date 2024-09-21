@@ -217,6 +217,7 @@ void push(struct cpu *cpu, uint16_t insn)
     uint8_t a = insn & 0x7;
     cpu->SP = cpu->SP - 2;
     store2(cpu, cpu->R[a], cpu->SP);
+    cpu->PC = cpu->PC + 2;
 }
 
 void pop(struct cpu *cpu, uint16_t insn)
@@ -224,6 +225,7 @@ void pop(struct cpu *cpu, uint16_t insn)
     uint8_t a = insn & 0x7;
     cpu->R[a] = load2(cpu, cpu->SP);
     cpu->SP = cpu->SP + 2;
+    cpu->PC = cpu->PC + 2;
 }
 
 void in(struct cpu *cpu, uint16_t insn)
@@ -239,6 +241,34 @@ void out(struct cpu *cpu, uint16_t insn)
     fputc(cpu->R[a], stdout);
     cpu->PC = cpu->PC + 2;
 }
+
+// void move(struct cpu *cpu, uint16_t insn)
+// {
+//     int s = insn & 0x0008;
+//     int d = (insn >> 4) & 0x0008;
+//     uint8_t *copyFrom = NULL;
+//     uint8_t *copyInto = NULL;
+
+//     if (s == 8)
+//     {
+//         copyFrom = &(cpu->SP);
+//     }
+//     else
+//     {
+//         copyFrom = &(cpu->R[s]);
+//     }
+
+//     if (d == 8)
+//     {
+//         copyInto = &(cpu->SP);
+//     }
+//     else
+//     {
+//         copyInto = &(cpu->R[d]);
+//     }
+
+//     store2(cpu, load2(cpu, copyFrom), copyInto);
+// }
 
 /* emulate(struct cpu*) - emulate a single instruction
  *     - returns 1 for halt, 0 for no halt
