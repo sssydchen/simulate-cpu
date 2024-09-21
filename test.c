@@ -269,6 +269,68 @@ void test_test_negative(struct cpu *cpu) {
     assert(val == 0);
     assert(cpu->Z == 0);  
     assert(cpu->N == 1); 
+}
+
+/**
+ * 0000 : 3001 5678 : STORE R1 -> *0x5678
+
+ * 0008 : 382b      : STORE R3 -> *R5
+ * 000a : 3c2c      : STORE.B R4 -> *R5
+ */
+void test_store_word_direct(struct cpu *cpu) {
+    zerocpu(cpu);
+
+    cpu->R[1] = 0xABCD;
+
+    store2(cpu, 0x3001, 0);  
+    store2(cpu, 0x5678, 2);   
+
+    int val = emulate(cpu);
+    assert(cpu->memory[0x5678] == 0xCD);       
+    assert(cpu->memory[0x5678 + 1] == 0xAB);  
+}
+
+/**
+ *  0004 : 3402 5678 : STORE.B R2 -> *0x5678
+ */
+void test_store_byte_direct(struct cpu *cpu) {
+    zerocpu(cpu);
+
+    cpu->R[2] = 0x1234; 
+
+    store2(cpu, 0x3402, 0);  
+    store2(cpu, 0x5678, 2);  
+
+    int val = emulate(cpu); 
+    assert(cpu->memory[0x5678] == 0x34); 
+}
+
+void test_store_word_indirect(struct cpu *cpu) {
+    zerocpu(cpu);
+
+    cpu->R[3] = 0x5678;  
+    cpu->R[5] = 0x2000; 
+
+    store2(cpu, 0x382B, 0); 
+
+    int val = emulate(cpu);
+    assert(cpu->memory[0x2000] == 0x78);      
+    assert(cpu->memory[0x2000 + 1] == 0x56);  
+
+}
+
+void test_store_byte_indirect(struct cpu *cpu) {
+    zerocpu(cpu);
+
+    cpu->R[4] = 0x5678; 
+    cpu->R[5] = 0x2000; 
+
+    store2(cpu, 0x3C2C, 0); 
+    int val = emulate(cpu);
+    assert(cpu->memory[0x2000] == 0x78); 
+}
+
+
 
 /*
     0000 : 1000 000a : SET R0 = 0x000a
@@ -467,7 +529,10 @@ int main(int argc, char **argv)
     test_load(&cpu);
     test_sub_negative(&cpu);
     test_sub_positive(&cpu);
+<<<<<<< HEAD
+=======
   
+>>>>>>> 585eb1b438dc0eb3f3d9a108087cd0894cb255d3
     test_or(&cpu);
     test_xor(&cpu);
     test_rshift(&cpu);
@@ -477,13 +542,24 @@ int main(int argc, char **argv)
     test_test_positive(&cpu);
     test_test_zero(&cpu);
     test_test_negative(&cpu);
+<<<<<<< HEAD
+    test_store_word_direct(&cpu);
+    test_store_byte_direct(&cpu);
+    test_store_word_indirect(&cpu);
+    test_store_byte_indirect(&cpu);
+
+=======
   
+>>>>>>> 585eb1b438dc0eb3f3d9a108087cd0894cb255d3
     test_cpu_address_indirect(&cpu);
     test_ret(&cpu);
     test_push_and_pop(&cpu);
     test_in_and_out(&cpu);
     test_halt(&cpu);
+<<<<<<< HEAD
+=======
   
+>>>>>>> 585eb1b438dc0eb3f3d9a108087cd0894cb255d3
 
     printf("all tests PASS\n");
 }

@@ -78,6 +78,73 @@ void load(struct cpu *cpu, uint16_t insn)
     }
 }
 
+void store(struct cpu *cpu, uint16_t insn)
+{
+    int reg_a = insn & 0x7;
+    int is_indirect = (insn & 0x0800) != 0;
+    int is_byte = (insn & 0x0400) != 0;
+
+    if (is_indirect)
+    {
+        int reg_b = (insn >> 3) & 0x7;
+        uint16_t addr = cpu->R[reg_b];
+        if (is_byte)
+        {
+            uint8_t value = cpu->R[reg_a] & 0xFF;
+            cpu->memory[addr] = value;
+        }
+        else
+        {
+            uint16_t value = cpu->R[reg_a];
+            store2(cpu, value, addr);
+        }
+        cpu->PC += 2;
+    }
+    else
+    {
+        uint16_t addr = load2(cpu, cpu->PC + 2);
+        if (is_byte)
+        {
+            uint8_t value = cpu->R[reg_a] & 0xFF;
+            cpu->memory[addr] = value;
+        }
+        else
+        {
+
+            uint16_t value = cpu->R[reg_a];
+            store2(cpu, value, addr);
+        }
+        cpu->PC += 4;
+    }
+}
+
+void move(struct cpu *cpu, uint16_t insn)
+{
+    int reg_d = (insn >> 4) & 0xF; 
+    int reg_s = insn & 0xF; 
+
+    if (reg_s > 8 || reg_d > 8)
+    {
+        printf("Invalid register\n");
+        return;
+    }
+
+    if (reg_s == 8)
+    {
+        cpu->R[reg_d] = cpu->SP; 
+    }
+    else if (reg_d == 8)
+    {
+        cpu->SP = cpu->R[reg_s]; 
+    }
+    else
+    {
+        cpu->R[reg_d] = cpu->R[reg_s]; 
+    }
+
+    cpu->PC += 2;
+}
+
 void alu(struct cpu *cpu, uint16_t insn)
 {
     int op = (insn >> 9) & 0x7;    // Extract bits 9-11 for operation code (ooo)
@@ -87,47 +154,53 @@ void alu(struct cpu *cpu, uint16_t insn)
 
     uint16_t result = 0;
 
-    switch (op) {
-        case 0x0:  // 000: ADD Ra + Rb -> Rc
-            result = cpu->R[reg_a] + cpu->R[reg_b];
-            cpu->R[reg_c] = result;
-            break;
-        case 0x1:  // 001: SUB Ra - Rb -> Rc
-            result = cpu->R[reg_a] - cpu->R[reg_b];
-            cpu->R[reg_c] = result;
-            break;
-        case 0x2:  // 010: AND Ra & Rb -> Rc
-            result = cpu->R[reg_a] & cpu->R[reg_b];
-            cpu->R[reg_c] = result;
-            break;
-        case 0x3:  // 011: OR Ra | Rb -> Rb
-            result = cpu->R[reg_a] | cpu->R[reg_b];
-            cpu->R[reg_b] = result;
-            break;
-        case 0x4:  // 100: XOR Ra ^ Rb -> Rc
-            result = cpu->R[reg_a] ^ cpu->R[reg_b];
-            cpu->R[reg_c] = result;
-            break;
-        case 0x5:  // 101: SHIFTR Ra >> Rb -> Rb (“shift right”)
-            result= cpu->R[reg_a] >> cpu->R[reg_b];
-            cpu->R[reg_b] = result;
-            break;
-        case 0x6:  // 110: CMP Ra – Rb (“compare”: compute Ra - Rb, discard the result but set N and Z
-            result = cpu->R[reg_a] - cpu->R[reg_b];
-            cpu->Z = (result == 0);  // Set Zero flag
-            cpu->N = (result & 0x8000) != 0;  // Set Negative flag
-            return;
-        case 0x7:  // 111: TEST Ra (set Z, N according to value in Ra)
-            result = cpu->R[reg_a];
-            cpu->Z = (result == 0);  // Set Zero flag
-            cpu->N = (result & 0x8000) != 0;  // Set Negative flag
-            return;
+    switch (op)
+    {
+    case 0x0: // 000: ADD Ra + Rb -> Rc
+        result = cpu->R[reg_a] + cpu->R[reg_b];
+        cpu->R[reg_c] = result;
+        break;
+    case 0x1: // 001: SUB Ra - Rb -> Rc
+        result = cpu->R[reg_a] - cpu->R[reg_b];
+        cpu->R[reg_c] = result;
+        break;
+    case 0x2: // 010: AND Ra & Rb -> Rc
+        result = cpu->R[reg_a] & cpu->R[reg_b];
+        cpu->R[reg_c] = result;
+        break;
+    case 0x3: // 011: OR Ra | Rb -> Rb
+        result = cpu->R[reg_a] | cpu->R[reg_b];
+        cpu->R[reg_b] = result;
+        break;
+    case 0x4: // 100: XOR Ra ^ Rb -> Rc
+        result = cpu->R[reg_a] ^ cpu->R[reg_b];
+        cpu->R[reg_c] = result;
+        break;
+    case 0x5: // 101: SHIFTR Ra >> Rb -> Rb (“shift right”)
+        result = cpu->R[reg_a] >> cpu->R[reg_b];
+        cpu->R[reg_b] = result;
+        break;
+    case 0x6: // 110: CMP Ra – Rb (“compare”: compute Ra - Rb, discard the result but set N and Z
+        result = cpu->R[reg_a] - cpu->R[reg_b];
+        cpu->Z = (result == 0);          // Set Zero flag
+        cpu->N = (result & 0x8000) != 0; // Set Negative flag
+        return;
+    case 0x7: // 111: TEST Ra (set Z, N according to value in Ra)
+        result = cpu->R[reg_a];
+        cpu->Z = (result == 0);          // Set Zero flag
+        cpu->N = (result & 0x8000) != 0; // Set Negative flag
+        return;
     }
 
     // Set the flags for non-CMP/TEST operations
-    cpu->Z = (result == 0);  // If result is zero, set Z to 1
-    cpu->N = (result & 0x8000) != 0;  // If result is positive, set N to 0; if negative, set N to 1
-    cpu->PC += 2; // Reset program counter
+    cpu->Z = (result == 0);          // If result is zero, set Z to 1
+    cpu->N = (result & 0x8000) != 0; // If result is positive, set N to 0; if negative, set N to 1
+    cpu->PC += 2;                    // Reset program counter
+}
+
+void jmp(struct cpu *cpu, uint16_t insn)
+{
+    
 }
 
 void call_register_indirect(struct cpu *cpu, uint16_t insn)
@@ -220,14 +293,14 @@ int emulate(struct cpu *cpu)
         load(cpu, insn);
         return 0;
     }
-    // else if ((insn & 0xF000) == 0x3000)
-    // {
-    //     store(cpu, insn);
-    // }
-    // else if ((insn & 0xF000) == 0x4000)
-    // {
-    //     move(cpu, insn);
-    // }
+    else if ((insn & 0xF000) == 0x3000)
+    {
+        store(cpu, insn);
+    }
+    else if ((insn & 0xF000) == 0x4000)
+    {
+        move(cpu, insn);
+    }
     else if ((insn & 0xF000) == 0x5000)
     {
         alu(cpu, insn);
