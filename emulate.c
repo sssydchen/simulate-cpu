@@ -198,6 +198,11 @@ void alu(struct cpu *cpu, uint16_t insn)
     cpu->PC += 2;                    // Reset program counter
 }
 
+void jmp(struct cpu *cpu, uint16_t insn)
+{
+    
+}
+
 void call_register_indirect(struct cpu *cpu, uint16_t insn)
 {
     uint8_t a = insn & 0x0007;         // get the register number from the last 3 bits.
