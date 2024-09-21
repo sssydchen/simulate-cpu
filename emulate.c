@@ -237,7 +237,7 @@ void jmp_to_explicit_addr(struct cpu *cpu, uint16_t insn)
         }
         break;
     case 0x5: // JMP_LE
-        if (cpu->N == 1 && cpu->Z == 1)
+        if (cpu->N == 1 || cpu->Z == 1)
         {
             cpu->PC = load2(cpu, cpu->PC + 2);
             is_true = 1;
@@ -302,7 +302,7 @@ void jmp_to_register_addr(struct cpu *cpu, uint16_t insn)
         }
         break;
     case 0x5: // JMP_LE
-        if (cpu->N == 1 && cpu->Z == 1)
+        if (cpu->N == 1 || cpu->Z == 1)
         {
             cpu->PC = cpu->R[a];
             is_true = 1;
