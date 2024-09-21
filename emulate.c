@@ -120,8 +120,8 @@ void store(struct cpu *cpu, uint16_t insn)
 
 void move(struct cpu *cpu, uint16_t insn)
 {
-    int reg_d = (insn >> 4) & 0xF; 
-    int reg_s = insn & 0xF; 
+    int reg_d = (insn >> 4) & 0xF;
+    int reg_s = insn & 0xF;
 
     if (reg_s > 8 || reg_d > 8)
     {
@@ -131,15 +131,15 @@ void move(struct cpu *cpu, uint16_t insn)
 
     if (reg_s == 8)
     {
-        cpu->R[reg_d] = cpu->SP; 
+        cpu->R[reg_d] = cpu->SP;
     }
     else if (reg_d == 8)
     {
-        cpu->SP = cpu->R[reg_s]; 
+        cpu->SP = cpu->R[reg_s];
     }
     else
     {
-        cpu->R[reg_d] = cpu->R[reg_s]; 
+        cpu->R[reg_d] = cpu->R[reg_s];
     }
 
     cpu->PC += 2;
@@ -200,7 +200,13 @@ void alu(struct cpu *cpu, uint16_t insn)
 
 void jmp(struct cpu *cpu, uint16_t insn)
 {
-    
+}
+
+void call_specified_address(struct cpu *cpu, uint16_t insn)
+{
+    cpu->SP = cpu->SP - 2;
+    store2(cpu, cpu->PC + 4, cpu->SP);
+    cpu->PC = load2(cpu, cpu->PC + 2);
 }
 
 void call_register_indirect(struct cpu *cpu, uint16_t insn)
@@ -311,6 +317,12 @@ int emulate(struct cpu *cpu)
     //     jmp(cpu, insn);
     // }
 
+    else if ((insn & 0xF000) == 0x8000)
+    {
+        /* CALL(Specified Address) */
+        call_specified_address(cpu, insn);
+        return 0;
+    }
     else if ((insn & 0xF000) == 0x9000)
     {
         /* CALL(Register Indirect) */
