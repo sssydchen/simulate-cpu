@@ -380,6 +380,24 @@ void test_move_reg_to_sp(struct cpu *cpu)
     assert(cpu->SP == 0x3333);
 }
 
+/**
+ * 0000 : 6000 1234 : JMP 0x1234
+ * Direct unconditional jump to the address 0x1234
+ */
+void test_jmp_direct(struct cpu *cpu) {
+    zerocpu(cpu);
+
+    // Store the JMP instruction in memory (address 0x0000)
+    store2(cpu, 0x6000, 0);  // JMP to address 0x1234
+    store2(cpu, 0x6787, 2);  // Target address (0x1234)
+
+    int val = emulate(cpu);
+
+    // After the jump, PC should be 0x1234
+    assert(val == 0);
+    assert(cpu->PC == 0x6787);
+}
+
 /*
     0000 : 1005 000c : SET R5 = 0x000c
     0004 : 8000 000a : CALL 0x000a
@@ -619,23 +637,19 @@ int main(int argc, char **argv)
     test_test_positive(&cpu);
     test_test_zero(&cpu);
     test_test_negative(&cpu);
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/master
     test_store_word_direct(&cpu);
     test_store_byte_direct(&cpu);
     test_store_word_indirect(&cpu);
     test_store_byte_indirect(&cpu);
 
-<<<<<<< HEAD
     test_move_reg_to_reg(&cpu);
     test_move_reg_to_sp(&cpu);
     test_move_sp_to_reg(&cpu);
 
-=======
+    test_jmp_direct(&cpu);
+
     test_cpu_specified_address(&cpu);
->>>>>>> origin/master
     test_cpu_address_indirect(&cpu);
     test_ret(&cpu);
     test_push_and_pop(&cpu);

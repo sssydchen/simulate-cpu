@@ -206,57 +206,62 @@ void alu(struct cpu *cpu, uint16_t insn)
     cpu->PC += 2;                    // Reset program counter
 }
 
-// void jmp(struct cpu *cpu, uint16_t insn)
-// {
+void jmp(struct cpu *cpu, uint16_t insn)
+{
     
-//     int condition = (insn >> 8) & 0x7;
-//     int reg_a = insn & 0x7; 
-//     int is_direct = (insn & 0x0800) == 0;
+    int condition = (insn >> 8) & 0x7;
+    int reg_a = insn & 0x7; 
+    int is_direct = (insn & 0x0800) == 0;
 
-//     int jump = 0;
-//     if (condition == 0x0) {        
-//         jump = 1;
-//     } else if (condition == 0x1) {  
-//         jump = (cpu->Z == 1);
-//     } else if (condition == 0x2) {  
-//         jump = (cpu->Z == 0);
-//     } else if (condition == 0x3) {   
-//         jump = (cpu->N == 1);
-//     } else if (condition == 0x4) {   
-//         jump = (cpu->N == 0 && cpu->Z == 0);
-//     } else if (condition == 0x5) {   
-//         jump = (cpu->N == 1 || cpu->Z == 1);
-//     } else if (condition == 0x6) {   
-//         jump = (cpu->N == 0);
-//     } else {                        
-//         printf("Illegal JMP condition\n");
-//         return;
-//     }
+    int jump = 0;
+    if (condition == 0x0) {        
+        jump = 1;
+    } else if (condition == 0x1) {  
+        jump = (cpu->Z == 1);
+    } else if (condition == 0x2) {  
+        jump = (cpu->Z == 0);
+    } else if (condition == 0x3) {   
+        jump = (cpu->N == 1);
+    } else if (condition == 0x4) {   
+        jump = (cpu->N == 0 && cpu->Z == 0);
+    } else if (condition == 0x5) {   
+        jump = (cpu->N == 1 || cpu->Z == 1);
+    } else if (condition == 0x6) {   
+        jump = (cpu->N == 0);
+    } else {                        
+        printf("Illegal JMP condition\n");
+        return;
+    }
 
-//     if (jump) {
-//         if (is_direct) {
-//             uint16_t address = load2(cpu, cpu->PC + 2); // Jump to the constant address (specified in bytes 3 and 4)
-//             cpu->PC = address; 
-//         } else {
-//             cpu->PC = cpu->R[reg_a]; // // Indirect jump: Jump to the address in register Ra
-//         }
-//     } else { // If condition is false, just increment the PC
-//         if (is_direct) {
-//             cpu->PC += 4; 
-//         } else {
-//             cpu->PC += 2; 
-//         }
-//     }
-// }
+    if (jump) {
+        if (is_direct) {
+            uint16_t address = load2(cpu, cpu->PC + 2); // Jump to the constant address (specified in bytes 3 and 4)
+            cpu->PC = address; 
+        } else {
+            cpu->PC = cpu->R[reg_a]; // // Indirect jump: Jump to the address in register Ra
+        }
+    } else { // If condition is false, just increment the PC
+        if (is_direct) {
+            cpu->PC += 4; 
+        } else {
+            cpu->PC += 2; 
+        }
+    }
+}
 
 void jmp_to_explicit_addr(struct cpu *cpu, uint16_t insn)
 {
     int cond = (insn >> 9) & 0x7;
     int is_true = 0;
+    uint16_t target_address = load2(cpu, cpu->PC + 2);
+    printf("Instruction: 0x%04X, Condition: 0x%X, PC before: 0x%04X, Target address: 0x%04X\n", insn, cond, cpu->PC, target_address);
     switch (cond)
     {
     case 0x0: // JMP(unconditional)
-        cpu->PC = load2(cpu, cpu->PC + 2);
+        printf("JMP unconditional - Jumping to address 0x%04X\n", target_address);
+        cpu->PC = target_address;
+        printf("CPU->PC 0x%04X\n", cpu->PC);
+        is_true = 1;
         break;
     case 0x1: // JMP_Z
         if (cpu->Z == 1)
@@ -489,11 +494,18 @@ int emulate(struct cpu *cpu)
     else if ((insn & 0xF000) == 0x6000)
     {
         jmp_to_explicit_addr(cpu, insn);
+        return 0;
     }
     else if ((insn & 0xF000) == 0x7000)
     {
         jmp_to_register_addr(cpu, insn);
+        return 0;
     }
+    // else if ((insn & 0xF000) == 0x6000 || (insn & 0xF000) == 0x7000)
+    // {
+    //     jmp(cpu, insn);
+    //     return 0;
+    // }
     else if ((insn & 0xF000) == 0x8000)
     {
         /* CALL(Specified Address) */
