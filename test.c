@@ -381,6 +381,38 @@ void test_move_reg_to_sp(struct cpu *cpu)
 }
 
 /*
+    0000 : 1005 000c : SET R5 = 0x000c
+    0004 : 8000 000a : CALL 0x000a
+    0008 : f000      : HALT
+    000a : 05 e0 48 00       ? ? H ?
+*/
+void test_cpu_specified_address(struct cpu *cpu)
+{
+    zerocpu(cpu);
+    cpu->SP = 1024;
+
+    store2(cpu, 0x1005, 0);
+    store2(cpu, 0x000c, 2);
+    int val = emulate(cpu);
+
+    store2(cpu, 0x8000, 4); // CALL instruction occurs here.
+    store2(cpu, 0x000a, 6);
+    val = emulate(cpu);
+
+    assert(val == 0);
+    assert(cpu->SP == 1022);
+    assert(load2(cpu, cpu->SP) == 0x0008); // checking if the instruction at PC + 4 is stored at address in SP
+    assert(cpu->PC == 0x000a);
+
+    store2(cpu, 0xF000, 8);
+    store2(cpu, 0xe005, 10);
+    val = emulate(cpu);
+
+    store2(cpu, 0x0048, 12);
+    val = emulate(cpu);
+}
+
+/*
     0000 : 1000 000a : SET R0 = 0x000a
     0004 : 1005 000c : SET R5 = 0x000c
     0008 : 9000      : CALL *R0
@@ -587,16 +619,23 @@ int main(int argc, char **argv)
     test_test_positive(&cpu);
     test_test_zero(&cpu);
     test_test_negative(&cpu);
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
     test_store_word_direct(&cpu);
     test_store_byte_direct(&cpu);
     test_store_word_indirect(&cpu);
     test_store_byte_indirect(&cpu);
 
+<<<<<<< HEAD
     test_move_reg_to_reg(&cpu);
     test_move_reg_to_sp(&cpu);
     test_move_sp_to_reg(&cpu);
 
+=======
+    test_cpu_specified_address(&cpu);
+>>>>>>> origin/master
     test_cpu_address_indirect(&cpu);
     test_ret(&cpu);
     test_push_and_pop(&cpu);
