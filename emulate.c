@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "lab1.h"
+#include <errno.h>
 
 void store2(struct cpu *cpu, uint16_t data, uint16_t addr)
 {
@@ -198,8 +199,131 @@ void alu(struct cpu *cpu, uint16_t insn)
     cpu->PC += 2;                    // Reset program counter
 }
 
-void jmp(struct cpu *cpu, uint16_t insn)
+void jmp_to_explicit_addr(struct cpu *cpu, uint16_t insn)
 {
+    int cond = (insn >> 9) & 0x7;
+    int is_true = 0;
+    switch (cond)
+    {
+    case 0x0: // JMP(unconditional)
+        cpu->PC = load2(cpu, cpu->PC + 2);
+        break;
+    case 0x1: // JMP_Z
+        if (cpu->Z == 1)
+        {
+            cpu->PC = load2(cpu, cpu->PC + 2);
+            is_true = 1;
+        }
+        break;
+    case 0x2: // JMP_NZ
+        if (cpu->Z == 0)
+        {
+            cpu->PC = load2(cpu, cpu->PC + 2);
+            is_true = 1;
+        }
+        break;
+    case 0x3: // JMP_LT
+        if (cpu->N == 1)
+        {
+            cpu->PC = load2(cpu, cpu->PC + 2);
+            is_true = 1;
+        }
+        break;
+    case 0x4: // JMP_GT
+        if (cpu->N == 0 && cpu->Z == 0)
+        {
+            cpu->PC = load2(cpu, cpu->PC + 2);
+            is_true = 1;
+        }
+        break;
+    case 0x5: // JMP_LE
+        if (cpu->N == 1 && cpu->Z == 1)
+        {
+            cpu->PC = load2(cpu, cpu->PC + 2);
+            is_true = 1;
+        }
+        break;
+    case 0x6: // JMP_GE
+        if (cpu->N == 0)
+        {
+            cpu->PC = load2(cpu, cpu->PC + 2);
+            is_true = 1;
+        }
+        break;
+    default:
+        errno = EOPNOTSUPP; // operation is not supported.
+        exit(EXIT_FAILURE);
+        break;
+    }
+    if (is_true == 0)
+    {
+        cpu->PC = cpu->PC + 4;
+    }
+}
+
+void jmp_to_register_addr(struct cpu *cpu, uint16_t insn)
+{
+    int cond = (insn >> 9) & 0x7;
+    int a = insn & 0x7;
+    int is_true = 0;
+
+    switch (cond)
+    {
+    case 0x0: // JMP(unconditional)
+        cpu->PC = cpu->R[a];
+        is_true = 1;
+        break;
+    case 0x1: // JMP_Z
+        if (cpu->Z == 1)
+        {
+            cpu->PC = cpu->R[a];
+            is_true = 1;
+        }
+        break;
+    case 0x2: // JMP_NZ
+        if (cpu->Z == 0)
+        {
+            cpu->PC = cpu->R[a];
+            is_true = 1;
+        }
+        break;
+    case 0x3: // JMP_LT
+        if (cpu->N == 1)
+        {
+            cpu->PC = cpu->R[a];
+            is_true = 1;
+        }
+        break;
+    case 0x4: // JMP_GT
+        if (cpu->N == 0 && cpu->Z == 0)
+        {
+            cpu->PC = cpu->R[a];
+            is_true = 1;
+        }
+        break;
+    case 0x5: // JMP_LE
+        if (cpu->N == 1 && cpu->Z == 1)
+        {
+            cpu->PC = cpu->R[a];
+            is_true = 1;
+        }
+        break;
+    case 0x6: // JMP_GE
+        if (cpu->N == 0)
+        {
+            cpu->PC = cpu->R[a];
+            is_true = 1;
+        }
+        break;
+    default:
+        errno = EOPNOTSUPP; // operation is not supported.
+        exit(EXIT_FAILURE);
+        break;
+    }
+    if (is_true == 0)
+    {
+        cpu->PC = cpu->PC + 2;
+    }
 }
 
 void call_specified_address(struct cpu *cpu, uint16_t insn)
@@ -312,11 +436,14 @@ int emulate(struct cpu *cpu)
         alu(cpu, insn);
         return 0;
     }
-    // else if ((insn & 0xF000) == 0x6000 || (insn & 0xF000) == 0x7000)
-    // {
-    //     jmp(cpu, insn);
-    // }
-
+    else if ((insn & 0xF000) == 0x6000)
+    {
+        jmp_to_explicit_addr(cpu, insn);
+    }
+    else if ((insn & 0xF000) == 0x7000)
+    {
+        jmp_to_register_addr(cpu, insn);
+    }
     else if ((insn & 0xF000) == 0x8000)
     {
         /* CALL(Specified Address) */
