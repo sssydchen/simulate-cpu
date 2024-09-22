@@ -190,14 +190,12 @@ void alu(struct cpu *cpu, uint16_t insn)
         result = cpu->R[reg_a] - cpu->R[reg_b];
         cpu->Z = (result == 0);
         cpu->N = (result & 0x8000) != 0;
-        return;
     }
     else if ((insn & 0x0E00) == 0x0E00) // 111: TEST Ra (set Z, N according to Ra)
     {
         result = cpu->R[reg_a];
         cpu->Z = (result == 0);
         cpu->N = (result & 0x8000) != 0;
-        return;
     }
 
     // Set the flags for non-CMP/TEST operations
@@ -205,49 +203,6 @@ void alu(struct cpu *cpu, uint16_t insn)
     cpu->N = (result & 0x8000) != 0; // If result is positive, set N to 0; if negative, set N to 1
     cpu->PC += 2;                    // Reset program counter
 }
-
-// void jmp(struct cpu *cpu, uint16_t insn)
-// {
-    
-//     int condition = (insn >> 8) & 0x7;
-//     int reg_a = insn & 0x7; 
-//     int is_direct = (insn & 0x0800) == 0;
-
-//     int jump = 0;
-//     if (condition == 0x0) {        
-//         jump = 1;
-//     } else if (condition == 0x1) {  
-//         jump = (cpu->Z == 1);
-//     } else if (condition == 0x2) {  
-//         jump = (cpu->Z == 0);
-//     } else if (condition == 0x3) {   
-//         jump = (cpu->N == 1);
-//     } else if (condition == 0x4) {   
-//         jump = (cpu->N == 0 && cpu->Z == 0);
-//     } else if (condition == 0x5) {   
-//         jump = (cpu->N == 1 || cpu->Z == 1);
-//     } else if (condition == 0x6) {   
-//         jump = (cpu->N == 0);
-//     } else {                        
-//         printf("Illegal JMP condition\n");
-//         return;
-//     }
-
-//     if (jump) {
-//         if (is_direct) {
-//             uint16_t address = load2(cpu, cpu->PC + 2); // Jump to the constant address (specified in bytes 3 and 4)
-//             cpu->PC = address; 
-//         } else {
-//             cpu->PC = cpu->R[reg_a]; // Indirect jump: Jump to the address in register Ra
-//         }
-//     } else { // If condition is false, just increment the PC
-//         if (is_direct) {
-//             cpu->PC += 4; 
-//         } else {
-//             cpu->PC += 2; 
-//         }
-//     }
-// }
 
 void jmp_to_explicit_addr(struct cpu *cpu, uint16_t insn)
 {
